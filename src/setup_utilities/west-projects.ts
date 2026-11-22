@@ -36,6 +36,7 @@ export interface WestSelection {
   scope: string;
   names: string[];
   all?: boolean;
+  preserveSelection?: boolean;
 }
 
 export function projectScope(ws: WorkspaceConfig, root: string) {
@@ -165,7 +166,7 @@ export async function chooseWestProjects(context: vscode.ExtensionContext, ws: W
     if ((request || selection.names.length) && await vscode.window.showWarningMessage(vscode.l10n.t("Download all active projects in this west workspace?"), { modal: true }, confirm) !== confirm) { return; }
   } else {
     if (!Array.isArray(selection.names) || !selection.names.length || !selection.names.every(n => typeof n === "string")) { return; }
-    await saveProjects(context, scope, selection.names);
+    if (!selection.preserveSelection) { await saveProjects(context, scope, selection.names); }
   }
   if (!ws.activeSetupState || scope !== projectScope(ws, ws.activeSetupState.setupPath)) { return; }
   return selection;

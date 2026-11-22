@@ -152,7 +152,12 @@ export class WestProjectPicker extends ZephyrLitElement {
           <small>${panelText("Manifest revision")}</small><code>${/^[0-9a-f]{40,64}$/i.test(project.revision) ? project.revision.slice(0, 10) : project.revision}</code>
           ${project.revision === "HEAD" ? html`<small>${panelText("Not pinned to a commit")}</small>` : nothing}
         </span>
-        ${!this.inactive ? html`<button type="button" aria-label=${panelText("Edit {0}", project.name)} @click=${() => this.showForm(undefined, project)}>${panelText("Edit")}</button>
+        ${!this.inactive ? html`
+          <button type="button" aria-label=${project.checkout.state === "absent" ? panelText("Download {0}", project.name) : panelText("Update {0}", project.name)}
+            @click=${() => this.send("updateWestProjects", { names: [project.name], preserveSelection: true })}>
+            ${project.checkout.state === "absent" ? panelText("Download") : panelText("Update")}
+          </button>
+          <button type="button" aria-label=${panelText("Edit {0}", project.name)} @click=${() => this.showForm(undefined, project)}>${panelText("Edit")}</button>
           <button type="button" aria-label=${panelText("Remove {0}", project.name)}
           @click=${() => this.send("editWestProject", { remove: project.name })}>${panelText("Remove")}</button>` : nothing}
       </div>`)}
@@ -220,7 +225,10 @@ export class WestProjectPicker extends ZephyrLitElement {
         .choose=${(repo: GitHubRepository) => this.showForm(repo)}></west-repository-search>` : nothing}
       <div class="west-panes">
         ${westSelectionPane("wp-selected-title", panelText("Selected modules"), selected.length,
-          this.group(selected, panelText("Selected modules"), true))}
+          this.group(selected, panelText("Selected modules"), true), this.inactive ? undefined : html`
+            <vscode-button ?disabled=${!selected.length} @click=${() => this.send("updateWestProjects", { names: selected.map(project => project.name) })}>
+              ${panelText("Download / update selected ({0})", selected.length)}
+            </vscode-button>`)}
         ${westSelectionPane("wp-available-title", panelText("Available modules"), available.length, html`
           ${sources.map(label => {
             const group = available.filter(project => this.origin(project) === label);
@@ -230,8 +238,6 @@ export class WestProjectPicker extends ZephyrLitElement {
       </div>
       ${this.inactive ? nothing : html`
         <div class="wp-tools wp-actions">
-          <vscode-button ?disabled=${!this.selected.size} @click=${() => this.send("updateWestProjects", { names: [...this.selected] })}>
-            ${panelText("Update selected ({0})", this.selected.size)}</vscode-button>
           <button type="button" @click=${() => this.send("updateWestProjects", { names: [], all: true })}>${panelText("Run a full west update")}</button>
         </div>`}
     `;
