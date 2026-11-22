@@ -2658,5 +2658,6 @@
     "typed-rest-client": "^2.3.0",
     "upath": "^3.0.6",
     "vscode-languageclient": "^9.0.1"
-  }
+  },
+  "l10n": "./l10n"
 }
