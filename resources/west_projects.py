@@ -204,7 +204,7 @@ def activate_overlay(data):
 if __name__ == "__main__":
     sys.dont_write_bytecode = True
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["list", "edit", "activate-overlay", "remote-revision", "update"])
+    parser.add_argument("action", choices=["list", "edit", "activate-overlay", "dependencies", "remote-revision", "update"])
     parser.add_argument("--narrow", action="store_true")
     parser.add_argument("--keep-descendants", action="store_true")
     parser.add_argument("names", nargs="*")
@@ -219,6 +219,20 @@ if __name__ == "__main__":
             if project.url != request["url"] or project.revision != request["revision"]:
                 raise ValueError("The manifest changed. Refresh and try again.")
             print(json.dumps(remote_revision(project)))
+        elif args.action == "dependencies":
+            from west_dependencies import discover
+            inputs = json.load(sys.stdin)
+            try:
+                manifest = Manifest.from_file()
+            except ManifestImportFailed as error:
+                direct = Manifest.from_file(import_flags=ImportFlag.IGNORE_PROJECTS)
+                provider = error.project
+                if provider is None or provider.name not in {p.name for p in direct.projects[1:]} or provider.is_cloned():
+                    raise
+                print(json.dumps({"projects": [{"name": provider.name, "missing": True,
+                      "requiredBy": ["west.yml"], "sources": [f"west.yml (import: {error.imp})"]}], "unknown": []}))
+            else:
+                print(json.dumps(discover(inputs, manifest)))
         elif args.action == "edit":
             data = json.load(sys.stdin)
             result = prepare_edit(data) if "entries" in data else edit_manifest(data["source"], data["project"], data["remove"])
