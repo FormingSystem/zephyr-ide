@@ -85,77 +85,77 @@
         "zephyr-ide.statusBar.showBuildPristine": {
           "type": "boolean",
           "default": true,
-          "description": "Show the 'Build Pristine' button in the status bar. Restart to take effect."
+          "description": "%settings.zephyr-ide.statusBar.showBuildPristine.description%"
         },
         "zephyr-ide.statusBar.showBuild": {
           "type": "boolean",
           "default": true,
-          "description": "Show the 'Build' button in the status bar. Restart to take effect."
+          "description": "%settings.zephyr-ide.statusBar.showBuild.description%"
         },
         "zephyr-ide.statusBar.showFlash": {
           "type": "boolean",
           "default": false,
-          "description": "Show the 'Flash' button in the status bar. Restart to take effect."
+          "description": "%settings.zephyr-ide.statusBar.showFlash.description%"
         },
         "zephyr-ide.statusBar.showBuildFlash": {
           "type": "boolean",
           "default": true,
-          "description": "Show the 'Build and Flash' button in the status bar. Restart to take effect."
+          "description": "%settings.zephyr-ide.statusBar.showBuildFlash.description%"
         },
         "zephyr-ide.statusBar.showDebug": {
           "type": "boolean",
           "default": false,
-          "description": "Show the 'Debug' button in the status bar. Restart to take effect."
+          "description": "%settings.zephyr-ide.statusBar.showDebug.description%"
         },
         "zephyr-ide.statusBar.showBuildDebug": {
           "type": "boolean",
           "default": true,
-          "description": "Show the 'Build and Debug' button in the status bar. Restart to take effect."
+          "description": "%settings.zephyr-ide.statusBar.showBuildDebug.description%"
         },
         "zephyr-ide.activeProjectPanel.showBuild": {
           "type": "boolean",
           "default": true,
-          "description": "Show the 'Build' button in the Active Project panel."
+          "description": "%settings.zephyr-ide.activeProjectPanel.showBuild.description%"
         },
         "zephyr-ide.activeProjectPanel.showBuildPristine": {
           "type": "boolean",
           "default": false,
-          "description": "Show the 'Build Pristine' button in the Active Project panel."
+          "description": "%settings.zephyr-ide.activeProjectPanel.showBuildPristine.description%"
         },
         "zephyr-ide.activeProjectPanel.showFlash": {
           "type": "boolean",
           "default": true,
-          "description": "Show the 'Flash' button in the Active Project panel."
+          "description": "%settings.zephyr-ide.activeProjectPanel.showFlash.description%"
         },
         "zephyr-ide.activeProjectPanel.showBuildFlash": {
           "type": "boolean",
           "default": false,
-          "description": "Show the 'Build and Flash' button in the Active Project panel."
+          "description": "%settings.zephyr-ide.activeProjectPanel.showBuildFlash.description%"
         },
         "zephyr-ide.activeProjectPanel.showBuildDebug": {
           "type": "boolean",
           "default": false,
-          "description": "Show the 'Build and Debug' button in the Active Project panel."
+          "description": "%settings.zephyr-ide.activeProjectPanel.showBuildDebug.description%"
         },
         "zephyr-ide.activeProjectPanel.showDebug": {
           "type": "boolean",
           "default": true,
-          "description": "Show the 'Debug' button in the Active Project panel."
+          "description": "%settings.zephyr-ide.activeProjectPanel.showDebug.description%"
         },
         "zephyr-ide.activeProjectPanel.showAttach": {
           "type": "boolean",
           "default": true,
-          "description": "Show the 'Debug Attach' button in the Active Project panel."
+          "description": "%settings.zephyr-ide.activeProjectPanel.showAttach.description%"
         },
         "zephyr-ide.activeProjectPanel.showBuildDashboard": {
           "type": "boolean",
           "default": true,
-          "description": "Show the 'Build Dashboard' button at the bottom of the Active Project panel. When shown, the Kconfig button is hidden from the Build and Build Pristine rows (accessible via the dashboard instead)."
+          "description": "%settings.zephyr-ide.activeProjectPanel.showBuildDashboard.description%"
         },
         "zephyr-ide.buildBeforeFlash": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically build before flashing when using the 'Zephyr IDE: Flash' command. The dedicated 'Build and Flash' command always builds first regardless of this setting."
+          "description": "%settings.zephyr-ide.buildBeforeFlash.description%"
         },
         "zephyr-ide.globalDirectory": {
           "type": [
@@ -163,8 +163,8 @@
             "null"
           ],
           "default": null,
-          "deprecationMessage": "Deprecated: Use 'zephyr-ide.toolchainDirectory' instead. The toolchain directory defaults to ~/.zephyr_ide/toolchains. Migrated automatically on startup.",
-          "description": "Deprecated. Use 'zephyr-ide.toolchainDirectory' instead."
+          "deprecationMessage": "%settings.zephyr-ide.globalDirectory.deprecationMessage%",
+          "description": "%settings.zephyr-ide.globalDirectory.description%"
         },
         "zephyr-ide.toolchainDirectory": {
           "type": [
@@ -172,7 +172,7 @@
             "null"
           ],
           "default": null,
-          "description": "Manually specify the directory containing Zephyr SDK installations (e.g., containing zephyr-sdk-0.17.0, zephyr-sdk-0.17.3 subdirectories). If not specified, defaults to toolchains subdirectory within the tools directory."
+          "description": "%settings.zephyr-ide.toolchainDirectory.description%"
         },
         "zephyr-ide.activeViewKconfigButton": {
           "type": "string",
@@ -183,13 +183,13 @@
             "menu-config"
           ],
           "enumDescriptions": [
-            "Open the build dashboard to the main summary page (default).",
-            "Open the build dashboard and navigate directly to the Kconfig page.",
-            "Run 'west build -t guiconfig' to open the graphical Kconfig editor in a terminal.",
-            "Run 'west build -t menuconfig' to open the terminal-based Kconfig editor."
+            "%settings.zephyr-ide.activeViewKconfigButton.enumDescriptions.0%",
+            "%settings.zephyr-ide.activeViewKconfigButton.enumDescriptions.1%",
+            "%settings.zephyr-ide.activeViewKconfigButton.enumDescriptions.2%",
+            "%settings.zephyr-ide.activeViewKconfigButton.enumDescriptions.3%"
           ],
           "default": "dashboard",
-          "description": "Controls what the Kconfig button in the Active Project view does. Defaults to opening the main summary page of the build dashboard. Can also be set to open the Kconfig page of the dashboard, or to launch the external guiconfig or menuconfig tool."
+          "description": "%settings.zephyr-ide.activeViewKconfigButton.description%"
         },
         "zephyr-ide.projectViewKconfigButton": {
           "type": "string",
@@ -199,40 +199,40 @@
             "menu-config"
           ],
           "enumDescriptions": [
-            "Open the build dashboard and navigate directly to the Kconfig page (default).",
-            "Run 'west build -t guiconfig' to open the graphical Kconfig editor in a terminal.",
-            "Run 'west build -t menuconfig' to open the terminal-based Kconfig editor."
+            "%settings.zephyr-ide.projectViewKconfigButton.enumDescriptions.0%",
+            "%settings.zephyr-ide.projectViewKconfigButton.enumDescriptions.1%",
+            "%settings.zephyr-ide.projectViewKconfigButton.enumDescriptions.2%"
           ],
           "default": "kconfig-dashboard",
-          "description": "Controls what the Config button in the Projects view does for a build. Defaults to opening the Kconfig page in the build dashboard. Can be changed to launch the external guiconfig or menuconfig tool instead."
+          "description": "%settings.zephyr-ide.projectViewKconfigButton.description%"
         },
         "zephyr-ide.westNarrowUpdate": {
           "type": [
             "boolean"
           ],
           "default": false,
-          "description": "Use 'west update --narrow' to reduce disk usage and download time by fetching only required Git history."
+          "description": "%settings.zephyr-ide.westNarrowUpdate.description%"
         },
         "zephyr-ide.westKeepDescendants": {
           "type": [
             "boolean"
           ],
           "default": false,
-          "description": "Use 'west update --keep-descendants' to preserve local commits on top of the manifest revision. When enabled, west will not reset a project if its current HEAD is a descendant of the manifest revision."
+          "description": "%settings.zephyr-ide.westKeepDescendants.description%"
         },
         "zephyr-ide.westZephyrExport": {
           "type": [
             "boolean"
           ],
           "default": false,
-          "description": "Run 'west zephyr-export' after a successful west update. This registers the Zephyr CMake package so that out-of-tree applications can find Zephyr with 'find_package(Zephyr)'."
+          "description": "%settings.zephyr-ide.westZephyrExport.description%"
         },
         "zephyr-ide.suppressWorkspaceWarning": {
           "type": [
             "boolean"
           ],
           "default": false,
-          "description": "Hide the notification about missing ZEPHYR_BASE and ZEPHYR_SDK_INSTALL_DIR environment variables. Enable this if you manage these variables externally."
+          "description": "%settings.zephyr-ide.suppressWorkspaceWarning.description%"
         },
         "zephyr-ide.venvFolder": {
           "type": [
@@ -240,14 +240,14 @@
             "null"
           ],
           "default": null,
-          "description": "Manually specify a Python virtual environment folder path. If not specified, defaults to .venv in the workspace setup path."
+          "description": "%settings.zephyr-ide.venvFolder.description%"
         },
         "zephyr-ide.disableZephyrBaseInjection": {
           "type": [
             "boolean"
           ],
           "default": false,
-          "description": "Disable Zephyr IDE's automatic injection of the ZEPHYR_BASE environment variable into terminals, tasks, and build/debug processes. Enable this if you manage ZEPHYR_BASE yourself."
+          "description": "%settings.zephyr-ide.disableZephyrBaseInjection.description%"
         },
         "zephyr-ide.zephyrBaseOverride": {
           "type": [
@@ -255,28 +255,28 @@
             "null"
           ],
           "default": null,
-          "description": "Absolute or workspace-root-relative path to a Zephyr base directory. When set, this overrides the ZEPHYR_BASE value Zephyr IDE would otherwise inject into terminals, tasks, and build/debug processes. It does not change which Zephyr tree Zephyr IDE itself scans for boards, samples, DTS bindings, or Python requirements — those still follow the detected installation. Ignored when 'zephyr-ide.disableZephyrBaseInjection' is true."
+          "description": "%settings.zephyr-ide.zephyrBaseOverride.description%"
         },
         "zephyr-ide.automaticProjectSelection": {
           "type": [
             "boolean"
           ],
           "default": true,
-          "description": "Automatically switch the active project when the editor focus changes to a file belonging to a different project."
+          "description": "%settings.zephyr-ide.automaticProjectSelection.description%"
         },
         "zephyr-ide.separateBuildDebugProfile": {
           "type": [
             "boolean"
           ],
           "default": false,
-          "description": "Expose a separate 'Build & Debug' bind slot in Runner Profiles. When enabled, 'Build and Debug' and 'Debug' can each have an independent runner or launch configuration binding. When disabled (default), the single 'Debug' slot drives both actions."
+          "description": "%settings.zephyr-ide.separateBuildDebugProfile.description%"
         },
         "zephyr-ide.useClangd": {
           "type": [
             "boolean"
           ],
           "default": false,
-          "description": "Use clangd for IntelliSense instead of the C/C++ extension. When enabled, sets 'C_Cpp.intelliSenseEngine' to 'disabled' and configures 'clangd.arguments' with the compile-commands directory and Zephyr SDK query-driver. Workspace settings are applied automatically when this setting changes. Requires the clangd VS Code extension (llvm-vs-code-extensions.vscode-clangd)."
+          "description": "%settings.zephyr-ide.useClangd.description%"
         },
         "zephyr-ide.compileCommandsMode": {
           "type": "string",
@@ -286,12 +286,12 @@
             "all"
           ],
           "enumDescriptions": [
-            "Include compile commands from the active project and active build only.",
-            "Include compile commands from all builds in the active project.",
-            "Include compile commands from all projects and builds (default)."
+            "%settings.zephyr-ide.compileCommandsMode.enumDescriptions.0%",
+            "%settings.zephyr-ide.compileCommandsMode.enumDescriptions.1%",
+            "%settings.zephyr-ide.compileCommandsMode.enumDescriptions.2%"
           ],
           "default": "all",
-          "description": "Controls which build compile_commands.json files are combined into .vscode/compile_commands.json."
+          "description": "%settings.zephyr-ide.compileCommandsMode.description%"
         },
         "zephyr-ide.scaVariant": {
           "type": "string",
@@ -310,21 +310,21 @@
             "none"
           ],
           "enumDescriptions": [
-            "Use dtdoctor (Zephyr's built-in devicetree SCA tool, bundled in the Zephyr repo — no extra install needed).",
-            "Use GCC -fanalyzer (requires GCC 12+, already in the Zephyr SDK — no extra install needed).",
-            "Use Clang static analyzer (requires Clang to be installed).",
-            "Use Sparse (lightweight C semantic parser, requires sparse to be installed).",
-            "Use CodeChecker (open-source analysis framework, requires CodeChecker to be installed).",
-            "Use Coverity (commercial static analysis tool, requires Coverity installation and license).",
-            "Use Parasoft C/C++test (commercial, requires cpptest installation and license).",
-            "Use ECLAIR (commercial static analysis tool, requires ECLAIR installation and license).",
-            "Use IAR C-STAT (requires IAR toolchain and license).",
-            "Use Polyspace (commercial, requires MathWorks Polyspace installation and license).",
-            "Use the custom variant specified in 'zephyr-ide.scaCustomVariant'.",
-            "Disable SCA. No ZEPHYR_SCA_VARIANT is passed to CMake."
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.0%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.1%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.2%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.3%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.4%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.5%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.6%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.7%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.8%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.9%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.10%",
+            "%settings.zephyr-ide.scaVariant.enumDescriptions.11%"
           ],
           "default": "none",
-          "description": "Static Code Analysis (SCA) tool to enable on pristine builds via -DZEPHYR_SCA_VARIANT. Defaults to none (disabled). Set to 'dtdoctor' for Zephyr's built-in DT diagnostic tool."
+          "description": "%settings.zephyr-ide.scaVariant.description%"
         },
         "zephyr-ide.scaCustomVariant": {
           "type": [
@@ -332,7 +332,7 @@
             "null"
           ],
           "default": null,
-          "description": "Custom SCA variant name passed as -DZEPHYR_SCA_VARIANT when 'zephyr-ide.scaVariant' is set to 'custom'. Must match a cmake/sca/<name>/sca.cmake entry in the Zephyr tree."
+          "description": "%settings.zephyr-ide.scaCustomVariant.description%"
         },
         "zephyr-ide.projectVariableDefaults": {
           "type": [
@@ -342,7 +342,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Default project variable names to show in the Project Details panel. Missing values are shown as empty."
+          "description": "%settings.zephyr-ide.projectVariableDefaults.description%"
         },
         "zephyr-ide.buildVariableDefaults": {
           "type": [
@@ -352,7 +352,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Default build variable names to show in the Project Details panel. Missing values are shown as empty."
+          "description": "%settings.zephyr-ide.buildVariableDefaults.description%"
         },
         "zephyr-ide.extraRunners": {
           "type": "array",
@@ -361,7 +361,7 @@
             "type": "string",
             "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
           },
-          "markdownDescription": "Additional runner names appended to the built-in list used by the **Set Local Bind** flash/debug pickers and the Runner Profile editor. Useful for custom or out-of-tree Zephyr runners. Runner names must use letters, numbers, `.`, `_`, or `-`. Example: `[\"bonfi-bl\", \"my-custom-runner\"]`"
+          "markdownDescription": "%settings.zephyr-ide.extraRunners.markdownDescription%"
         },
         "zephyr-ide.global_directory": {
           "type": [
@@ -369,8 +369,8 @@
             "null"
           ],
           "default": null,
-          "deprecationMessage": "Deprecated: Use 'zephyr-ide.toolchainDirectory' instead. Migrated automatically on startup.",
-          "description": "Deprecated. Use 'zephyr-ide.toolchainDirectory' instead."
+          "deprecationMessage": "%settings.zephyr-ide.global_directory.deprecationMessage%",
+          "description": "%settings.zephyr-ide.global_directory.description%"
         },
         "zephyr-ide.tools_directory": {
           "type": [
@@ -378,8 +378,8 @@
             "null"
           ],
           "default": null,
-          "deprecationMessage": "Deprecated: Use 'zephyr-ide.toolchainDirectory' instead. Migrated automatically on startup.",
-          "description": "Deprecated. Use 'zephyr-ide.toolchainDirectory' instead."
+          "deprecationMessage": "%settings.zephyr-ide.tools_directory.deprecationMessage%",
+          "description": "%settings.zephyr-ide.tools_directory.description%"
         },
         "zephyr-ide.toolchain_directory": {
           "type": [
@@ -387,16 +387,16 @@
             "null"
           ],
           "default": null,
-          "deprecationMessage": "Deprecated: Use 'zephyr-ide.toolchainDirectory' instead. Migrated automatically on startup.",
-          "description": "Deprecated. Use 'zephyr-ide.toolchainDirectory' instead."
+          "deprecationMessage": "%settings.zephyr-ide.toolchain_directory.deprecationMessage%",
+          "description": "%settings.zephyr-ide.toolchain_directory.description%"
         },
         "zephyr-ide.suppress-workspace-warning": {
           "type": [
             "boolean"
           ],
           "default": false,
-          "deprecationMessage": "Deprecated: Use 'zephyr-ide.suppressWorkspaceWarning' instead. Migrated automatically on startup.",
-          "description": "Deprecated. Use 'zephyr-ide.suppressWorkspaceWarning' instead."
+          "deprecationMessage": "%settings.zephyr-ide.suppress-workspace-warning.deprecationMessage%",
+          "description": "%settings.zephyr-ide.suppress-workspace-warning.description%"
         },
         "zephyr-ide.venv-folder": {
           "type": [
@@ -404,8 +404,8 @@
             "null"
           ],
           "default": null,
-          "deprecationMessage": "Deprecated: Use 'zephyr-ide.venvFolder' instead. Migrated automatically on startup.",
-          "description": "Deprecated. Use 'zephyr-ide.venvFolder' instead."
+          "deprecationMessage": "%settings.zephyr-ide.venv-folder.deprecationMessage%",
+          "description": "%settings.zephyr-ide.venv-folder.description%"
         },
         "zephyr-ide.project_variable_defaults": {
           "type": [
@@ -415,8 +415,8 @@
           "items": {
             "type": "string"
           },
-          "deprecationMessage": "Deprecated: Use 'zephyr-ide.projectVariableDefaults' instead. Migrated automatically on startup.",
-          "description": "Deprecated. Use 'zephyr-ide.projectVariableDefaults' instead."
+          "deprecationMessage": "%settings.zephyr-ide.project_variable_defaults.deprecationMessage%",
+          "description": "%settings.zephyr-ide.project_variable_defaults.description%"
         },
         "zephyr-ide.build_variable_defaults": {
           "type": [
@@ -426,13 +426,13 @@
           "items": {
             "type": "string"
           },
-          "deprecationMessage": "Deprecated: Use 'zephyr-ide.buildVariableDefaults' instead. Migrated automatically on startup.",
-          "description": "Deprecated. Use 'zephyr-ide.buildVariableDefaults' instead."
+          "deprecationMessage": "%settings.zephyr-ide.build_variable_defaults.deprecationMessage%",
+          "description": "%settings.zephyr-ide.build_variable_defaults.description%"
         },
         "zephyr-ide.runnerProfiles": {
           "type": "array",
           "default": [],
-          "markdownDescription": "Reusable runner profiles (name + per-slot binds for `flash`, `debug`, `attach`). Each slot bind selects `auto`, a zephyr `runner` with optional extra args, or a named VS Code `launch` configuration. Workspace `.vscode/zephyr-ide.json` `runnerProfiles` overrides this on name collision.",
+          "markdownDescription": "%settings.zephyr-ide.runnerProfiles.markdownDescription%",
           "items": {
             "type": "object",
             "required": [
