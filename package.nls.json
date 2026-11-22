@@ -20,6 +20,8 @@
   "zephyr-ide.modify-zephyr-ide-commands.title": "Zephyr IDE: Modify Commands (zephyr-ide.json)",
   "zephyr-ide.run-zephyr-ide-commands.title": "Zephyr IDE: Run Commands from zephyr-ide.json",
   "zephyr-ide.west-init.title": "Zephyr IDE: West Init",
+  "zephyr-ide.select-west-modules.title": "Zephyr IDE: Select West Modules",
+  "zephyr-ide.update-selected-west-modules.title": "Zephyr IDE: Update Selected West Modules",
   "zephyr-ide.west-update.title": "Zephyr IDE: West Update",
   "zephyr-ide.create-new-west-workspace.title": "Zephyr IDE: Create New West Workspace",
   "zephyr-ide.refresh-west-workspaces.title": "Zephyr IDE: Refresh West Workspaces",

@@ -26,6 +26,7 @@ import { westSelector, WestLocation } from "./west_selector";
 import { WorkspaceConfig, GlobalConfig, SetupState } from "./types";
 import { saveSetupState, setSetupState, setWorkspaceState } from "./state-management";
 import { getSetupState, getSetupStateOrNotify, getVenvPath } from "./workspace-config";
+import { chooseWestProjects, projectHelper, WestSelection } from "./west-projects";
 import { ensureWestConfigManifest } from "./west-config-parser";
 import { SetupProgressTracker } from "./setup-progress";
 import { getDefaultPythonExecutable, loadVendorHostToolsManifest, confirmVendorToolsInstall, installPackagesBatch } from "./host_tools";
@@ -230,17 +231,37 @@ export async function westInit(context: vscode.ExtensionContext, wsConfig: Works
   return westInitRes;
 }
 
-export async function westUpdate(context: vscode.ExtensionContext, wsConfig: WorkspaceConfig, globalConfig: GlobalConfig, solo = true) {
+const updatingWorkspaces = new Set<string>();
+
+export async function westUpdate(context: vscode.ExtensionContext, wsConfig: WorkspaceConfig, globalConfig: GlobalConfig, solo = true, request?: WestSelection) {
   const setupState = await getSetupStateOrNotify(context, wsConfig, "West Update");
   if (!setupState) {
     return;
   }
 
+  const root = path.resolve(setupState.setupPath);
+  if (updatingWorkspaces.has(root)) {
+    void vscode.window.showInformationMessage(vscode.l10n.t("A west update is already in progress."));
+    return;
+  }
+  updatingWorkspaces.add(root);
+  try {
+    return await updateWorkspaceProjects(context, wsConfig, globalConfig, setupState, solo, request);
+  } finally {
+    updatingWorkspaces.delete(root);
+  }
+}
+
+async function updateWorkspaceProjects(context: vscode.ExtensionContext, wsConfig: WorkspaceConfig, globalConfig: GlobalConfig,
+  setupState: SetupState, solo: boolean, request?: WestSelection) {
   // Safety check: ensure .west/config has valid manifest entries before running west update.
   // This prevents "manifest file not found: None" errors if the config was corrupted.
   if (ensureWestConfigManifest(setupState.setupPath)) {
     outputInfo("West Update", `Repaired .west/config manifest section before update (setupPath: ${setupState.setupPath})`);
   }
+
+  const selection = await chooseWestProjects(context, wsConfig, setupState, request);
+  if (!selection) { return undefined; }
 
   setupState.westUpdated = false;
   setupState.zephyrDir = "";
@@ -254,23 +275,22 @@ export async function westUpdate(context: vscode.ExtensionContext, wsConfig: Wor
     useNarrowUpdate = true;
   }
   const useKeepDescendants = configuration.get<boolean>('westKeepDescendants', false);
-  let cmd = 'west update';
-  if (useNarrowUpdate) {
-    cmd += ' --narrow';
-  }
-  if (useKeepDescendants) {
-    cmd += ' --keep-descendants';
-  }
+  const flags: string[] = [];
+  if (useNarrowUpdate) { flags.push('--narrow'); }
+  if (useKeepDescendants) { flags.push('--keep-descendants'); }
+  const [python, helper] = projectHelper(context, setupState);
+  const cmd = selection.all ? [python, '-m', 'west', 'update', ...flags]
+    : [python, helper, 'update', ...flags, '--', ...selection.names];
   const westUpdateRes = await executeTaskHelperInPythonEnv(setupState, "Zephyr IDE: West Update", cmd, setupState.setupPath, true);
 
   if (!westUpdateRes) {
-    notifyError("West Update", vscode.l10n.t("West Update Failed. Check the Zephyr IDE output for details."), { command: cmd });
+    notifyError("West Update", vscode.l10n.t("West Update Failed. Check the Zephyr IDE output for details."), { command: cmd.join(" ") });
   } else {
     setupState.westUpdated = true;
     const zephyrScanResult = await scanAndSetZephyrDirAndVersion(setupState, "West Update");
     if (zephyrScanResult === "unparseable") {
       notifyError("West Update", vscode.l10n.t("West Update succeeded, but Zephyr VERSION file could not be parsed."));
-    } else if (zephyrScanResult === "missing") {
+    } else if (zephyrScanResult === "missing" && (selection.all || !solo)) {
       notifyError("West Update", vscode.l10n.t("West Update succeeded, but Zephyr module information could not be found."));
     }
 
@@ -487,6 +507,10 @@ export async function westUpdateWithRequirements(context: vscode.ExtensionContex
     // Run west update first
     progressTracker?.startStep('west-update');
     const westUpdateResult = await westUpdate(context, wsConfig, globalConfig, false);
+    if (westUpdateResult === undefined) {
+      progressTracker?.fail(vscode.l10n.t("West update canceled."));
+      return false;
+    }
     if (!westUpdateResult) {
       progressTracker?.failStep('west-update', 'West update failed');
       notifyError(operationTitle, vscode.l10n.t("West update failed. Check the Zephyr IDE output for details."));
