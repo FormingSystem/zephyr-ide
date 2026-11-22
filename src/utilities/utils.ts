@@ -18,6 +18,7 @@ limitations under the License.
 
 import * as vscode from "vscode";
 import * as path from "upath";
+import { windows7ZipDirectory } from "./windows-7zip";
 import * as util from "util";
 import * as cp from "child_process";
 import * as fs from "fs";
@@ -995,11 +996,11 @@ export async function executeShellCommand(cmd: string, cwd: string, display_erro
     // 7z.exe work immediately.  The directory may be missing from PATH when
     // refreshWindowsPath() rebuilds it from the registry before the
     // post-install step has persisted the entry, or in CI environments.
-    const sevenZipDir = "C:\\Program Files\\7-Zip";
-    const hasSevenZip = consolidatedPath.split(";").some(
+    const sevenZipDir = windows7ZipDirectory(envObj);
+    const hasSevenZip = sevenZipDir && consolidatedPath.split(";").some(
       entry => entry.toLowerCase() === sevenZipDir.toLowerCase()
     );
-    if (!hasSevenZip && fs.existsSync(sevenZipDir)) {
+    if (sevenZipDir && !hasSevenZip) {
       envObj["Path"] = `${sevenZipDir};${consolidatedPath}`;
     } else {
       envObj["Path"] = consolidatedPath;
