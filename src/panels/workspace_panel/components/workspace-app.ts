@@ -31,6 +31,7 @@ import type {
 @customElement('workspace-app')
 export class WorkspaceApp extends ZephyrLitElement {
   @state() private _data?: WorkspacePanelData;
+  @state() private checkingRemotes = false;
   @state() private modulesTab = false;
   @state() private _catalog?: WestPickerData;
   @state() private _progressData?: SetupProgressData;
@@ -67,7 +68,11 @@ export class WorkspaceApp extends ZephyrLitElement {
         this.modulesTab = true;
         void this.updateComplete.then(() => this.querySelector<HTMLInputElement>('west-project-picker input[type="search"]')?.focus());
         break;
+      case 'checkingWestRemotes':
+        if (this._catalog?.scope === msg.scope) { this.checkingRemotes = msg.checking; }
+        break;
       case 'westProjects':
+        if (this._catalog?.scope !== msg.scope) { this.checkingRemotes = false; }
         this._catalog = msg;
         break;
       case 'workspaceSetupProgress':
@@ -327,7 +332,7 @@ export class WorkspaceApp extends ZephyrLitElement {
           <button aria-pressed=${this.modulesTab} @click=${() => { this.modulesTab = true; }}>${panelText("West Git modules")}</button>
         </nav>
         ${this.modulesTab ? html`
-          <div class="section-container"><west-project-picker .catalog=${this._catalog} .inactive=${disabled}></west-project-picker></div>
+          <div class="section-container"><west-project-picker .checking=${this.checkingRemotes} .catalog=${this._catalog} .inactive=${disabled}></west-project-picker></div>
         ` : html`
 
         <div class="section-container">

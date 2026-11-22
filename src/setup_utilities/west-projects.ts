@@ -9,7 +9,16 @@ import { pythonInVenv } from "../utilities/python-venv";
 import { getVenvPath } from "./workspace-config";
 import { parseWestConfigManifestPath } from "./west-config-parser";
 
+export interface RemoteRevision {
+  checkedAt: string;
+  localHead?: string;
+  sha?: string;
+  error?: "unavailable" | "refMissing";
+}
+
 export interface WestProject {
+  checkout: { state: "absent" | "invalid" | "cloned"; head?: string };
+  remote?: RemoteRevision;
   name: string;
   url: string;
   revision: string;
@@ -56,7 +65,7 @@ function invoke<T>(context: vscode.ExtensionContext, state: SetupState, action: 
       cwd: state.setupPath, windowsHide: true, timeout: 30000, maxBuffer: 16 * 1024 * 1024,
       env: { ...process.env, PYTHONIOENCODING: "utf-8" },
     }, (error, stdout, stderr) => {
-      if (error) { reject(new Error(stderr.trim() || error.message)); return; }
+      if (error) { reject(new Error(vscode.l10n.t(stderr.trim() || error.message))); return; }
       try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); }
     });
     child.stdin?.on("error", () => { /* execFile reports child errors */ });
@@ -64,8 +73,18 @@ function invoke<T>(context: vscode.ExtensionContext, state: SetupState, action: 
   });
 }
 
+function remoteKey(state: SetupState, p: WestProject) {
+  return "westRemote:" + JSON.stringify([path.resolve(state.setupPath), p.name, p.url, p.revision]);
+}
+
+export async function checkWestRemote(context: vscode.ExtensionContext, state: SetupState, project: WestProject) {
+  const remote = await invoke<RemoteRevision>(context, state, "remote-revision", project);
+  await context.workspaceState.update(remoteKey(state, project), { ...remote, localHead: project.checkout.head });
+}
+
 export async function readWestCatalog(context: vscode.ExtensionContext, state: SetupState) {
   const data = await invoke<WestCatalog>(context, state, "list");
+  for (const p of data.projects) { p.remote = context.workspaceState.get<RemoteRevision>(remoteKey(state, p)); }
   data.projects.sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }) || a.name.localeCompare(b.name, "en"));
   return data;
 }

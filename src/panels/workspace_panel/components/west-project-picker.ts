@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { html, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { isPinnedRevision, tracksRemoteRevision } from "../../../utilities/west-revision";
 import { repositoryAddresses } from "../../../utilities/repository-addresses";
 import { live } from "lit/directives/live.js";
 import { ZephyrLitElement } from "../../webview_shared/lit-base";
@@ -23,6 +24,7 @@ export interface WestPickerData extends WestCatalog {
 @customElement("west-project-picker")
 export class WestProjectPicker extends ZephyrLitElement {
   @property({ attribute: false }) catalog?: WestPickerData;
+  @property({ type: Boolean }) checking = false;
   @property({ type: Boolean }) inactive = false;
   @state() private selected = new Set<string>();
   @state() private query = "";
@@ -30,6 +32,7 @@ export class WestProjectPicker extends ZephyrLitElement {
   @state() private discover = false;
   @state() private adding = false;
   @state() private lineCount = 0;
+  private lastCheckoutKey?: string;
   @state() private editing?: WestProject;
 
   protected willUpdate(changes: PropertyValues) {
@@ -48,6 +51,19 @@ export class WestProjectPicker extends ZephyrLitElement {
     } else if (catalog.added) {
       this.adding = false;
     }
+
+    this.refreshChangedCheckouts(catalog);
+  }
+
+  private refreshChangedCheckouts(catalog: WestPickerData) {
+    const checkouts = catalog.projects
+      .filter(tracksRemoteRevision)
+      .map(project => [project.name, project.url, project.revision, project.checkout.head]);
+    const checkoutKey = JSON.stringify([catalog.scope, ...checkouts]);
+    if (this.lastCheckoutKey === checkoutKey) { return; }
+
+    this.lastCheckoutKey = checkoutKey;
+    this.send("refreshWestProjects");
   }
 
   private send(command: string, extras: Record<string, unknown> = {}) {
@@ -87,6 +103,18 @@ export class WestProjectPicker extends ZephyrLitElement {
       ? panelText("Official GitHub repositories") : panelText("Custom Git repositories");
   }
 
+  private checkoutStatus(project: WestProject) {
+    const { checkout, revision, remote } = project;
+    if (checkout.state === "absent") { return panelText("Not downloaded"); }
+    if (checkout.state === "invalid") { return panelText("Checkout unavailable"); }
+    if (isPinnedRevision(revision)) {
+      return checkout.head === revision.toLowerCase() ? panelText("At manifest revision") : panelText("Differs from manifest");
+    }
+    if (!remote) { return panelText("Downloaded · remote unchecked"); }
+    if (remote.error) { return remote.error === "refMissing" ? panelText("Downloaded · remote ref missing") : panelText("Downloaded · check failed"); }
+    return checkout.head === remote.sha ? panelText("Matches remote") : panelText("Differs from remote");
+  }
+
   private group(rows: WestProject[], label: string, pinned = false) {
     return html`<section class="wp-group" aria-label=${label}>
       ${pinned ? nothing : html`<h5>${label} <small>${rows.length}</small></h5>`}
@@ -97,7 +125,13 @@ export class WestProjectPicker extends ZephyrLitElement {
             @change=${() => this.setSelection([project], "invert")}>
           <span><strong>${project.name}</strong><small>${project.path}${pinned ? " · " + this.origin(project) : ""}</small></span>
         </label>
-        <code title=${project.revision}>${/^[0-9a-f]{40,64}$/i.test(project.revision) ? project.revision.slice(0, 10) : project.revision}</code>
+        <span class="wp-checkout" title=${[project.checkout.head, project.remote?.sha].filter(Boolean).join(" → ")}>
+          ${this.checkoutStatus(project)}${project.remote && project.checkout.state === "cloned" ? html`<small>${panelText("Checked {0}", new Date(project.remote.checkedAt).toLocaleString())}</small>` : nothing}
+        </span>
+        <span class="wp-revision" title=${project.revision}>
+          <small>${panelText("Manifest revision")}</small><code>${/^[0-9a-f]{40,64}$/i.test(project.revision) ? project.revision.slice(0, 10) : project.revision}</code>
+          ${project.revision === "HEAD" ? html`<small>${panelText("Not pinned to a commit")}</small>` : nothing}
+        </span>
         ${!this.inactive ? html`<button type="button" aria-label=${panelText("Edit {0}", project.name)} @click=${() => this.showForm(undefined, project)}>${panelText("Edit")}</button>
           <button type="button" aria-label=${panelText("Remove {0}", project.name)}
           @click=${() => this.send("editWestProject", { remove: project.name })}>${panelText("Remove")}</button>` : nothing}
@@ -192,7 +226,7 @@ export class WestProjectPicker extends ZephyrLitElement {
           <button type="button" ?disabled=${!data || !this.query.trim() || invalid}
             @click=${this.searchGitHub}>${panelText("Search GitHub sources")}</button>
           <button type="button" @click=${() => this.showForm()}>${panelText("Add Git repositories")}</button>`}
-        <button type="button" @click=${() => this.send("refreshWestProjects")}>${panelText("Refresh")}</button>
+        <button type="button" ?disabled=${this.checking} @click=${() => this.send("refreshWestProjects", { force: true })}>${this.checking ? panelText("Checking updates…") : panelText("Check for updates")}</button>
         <button type="button" @click=${() => this.send("openWestYml")}>${panelText("Open in Editor")}</button>
       </div>
       ${this.renderRepositoryForm()}

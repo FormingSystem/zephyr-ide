@@ -15,8 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { tracksRemoteRevision } from "../../utilities/west-revision";
 import { findRepositories } from "../../setup_utilities/github-repositories";
-import { editWestProject, projectScope, readWestCatalog, savedProjects, saveProjects } from "../../setup_utilities/west-projects";
+import { checkWestRemote, editWestProject, projectScope, readWestCatalog, savedProjects, saveProjects } from "../../setup_utilities/west-projects";
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
 import * as path from "upath";
@@ -276,7 +277,7 @@ export class WorkspacePanel {
         this.openWestYml();
         return;
       case "refreshWestProjects":
-        void this.loadWestProjects();
+        void this.refreshModuleStatus(message.scope, message.force === true).catch(error => notifyError("West", String(error)));
         return;
       case "searchGitHubRepositories": {
         const { scope, id, owner, query } = message;
@@ -495,6 +496,44 @@ export class WorkspacePanel {
   private catalogGeneration = 0;
   private editingProjects = false;
 
+  private checkingRemotes = false;
+
+  private async refreshModuleStatus(scope: string, force: boolean) {
+    const target = this.getTargetSetupState();
+    if (!target || !this.currentWsConfig || scope !== projectScope(this.currentWsConfig, target.setupPath)) { return; }
+    if (!vscode.workspace.isTrusted || this.checkingRemotes) {
+      await this.loadWestProjects();
+      return;
+    }
+
+    this.checkingRemotes = true;
+    try {
+      const { projects } = await readWestCatalog(this._context, target.setupState);
+      const pending = projects.filter(project => {
+        if (!tracksRemoteRevision(project)) { return false; }
+        const { remote, checkout } = project;
+        if (force || !remote || remote.localHead !== checkout.head) { return true; }
+        const cacheAge = Date.now() - Date.parse(remote.checkedAt);
+        return cacheAge > 15 * 60_000;
+      });
+      if (!pending.length) { return; }
+
+      await this._panel.webview.postMessage({ command: "checkingWestRemotes", scope, checking: true });
+      const worker = async () => {
+        for (let p = pending.pop(); p; p = pending.pop()) {
+          await checkWestRemote(this._context, target.setupState, p);
+        }
+      };
+      const results = await Promise.allSettled(Array.from({ length: Math.min(4, pending.length) }, worker));
+      const failed = results.find(result => result.status === "rejected");
+      if (failed?.status === "rejected") { throw failed.reason; }
+    } finally {
+      this.checkingRemotes = false;
+      await this.loadWestProjects();
+      void this._panel.webview.postMessage({ command: "checkingWestRemotes", scope, checking: false });
+    }
+  }
+
   private async loadWestProjects(added?: string[], editError?: string) {
     const target = this.getTargetSetupState();
     if (!target || !this.currentWsConfig) { return; }
@@ -542,6 +581,7 @@ export class WorkspacePanel {
       await saveProjects(this._context, scope, message.names);
     } else {
       await vscode.commands.executeCommand("zephyr-ide.west-update", { scope, names: message.names, all: message.all === true });
+      await this.refreshModuleStatus(scope, true);
     }
   }
 
