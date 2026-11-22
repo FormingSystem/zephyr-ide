@@ -183,6 +183,21 @@ west-project-picker .wp-row label {
 west-project-picker .wp-row small { display: block; }
 west-project-picker small, west-project-picker .wp-empty, west-project-picker [role="status"] { color: var(--vscode-descriptionForeground); }
 west-project-picker .wp-checkout { text-align: end; font-size: 0.92em; }
+west-project-picker .wp-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    color: var(--vscode-descriptionForeground);
+}
+west-project-picker .wp-status[data-tone="success"] {
+    color: color-mix(in srgb, var(--vscode-gitDecoration-addedResourceForeground, var(--vscode-foreground)) 80%, var(--vscode-foreground));
+}
+west-project-picker .wp-status[data-tone="warning"] { color: var(--vscode-gitDecoration-modifiedResourceForeground, var(--vscode-foreground)); }
+west-project-picker .wp-status[data-tone="info"] { color: var(--vscode-textLink-foreground, var(--vscode-foreground)); }
+west-project-picker .wp-status[data-tone="downloaded"] { color: var(--vscode-symbolIcon-methodForeground, var(--vscode-textLink-foreground)); }
+west-project-picker .wp-status[data-tone="error"] {
+    color: color-mix(in srgb, var(--vscode-errorForeground, var(--vscode-foreground)) 65%, var(--vscode-foreground));
+}
 west-project-picker .wp-revision { max-width: 30%; text-align: end; }
 west-project-picker .wp-row code { overflow-wrap: anywhere; }
 west-project-picker .wp-empty { margin: 8px 12px; }

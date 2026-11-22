@@ -90,15 +90,25 @@ export class WestProjectPicker extends ZephyrLitElement {
   }
 
   private checkoutStatus(project: WestProject) {
+    const status = (tone: string, icon: string, text: string) => html`
+      <span class="wp-status" data-tone=${tone}>
+        <span class="codicon codicon-${icon}" aria-hidden="true"></span>${text}
+      </span>`;
     const { checkout, revision, remote } = project;
-    if (checkout.state === "absent") { return t("Not downloaded"); }
-    if (checkout.state === "invalid") { return t("Checkout unavailable"); }
+    if (checkout.state === "absent") { return status("muted", "cloud-download", t("Not downloaded")); }
+    if (checkout.state === "invalid") { return status("error", "error", t("Checkout unavailable")); }
     if (/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i.test(revision)) {
-      return checkout.head === revision.toLowerCase() ? t("At manifest revision") : t("Differs from manifest");
+      return checkout.head === revision.toLowerCase()
+        ? status("success", "check", t("At manifest revision"))
+        : status("warning", "warning", t("Differs from manifest"));
     }
-    if (!remote) { return t("Downloaded · remote unchecked"); }
-    if (remote.error) { return remote.error === "refMissing" ? t("Downloaded · remote ref missing") : t("Downloaded · check failed"); }
-    return checkout.head === remote.sha ? t("Matches remote") : t("Differs from remote");
+    if (!remote) { return status("downloaded", "clock", t("Downloaded · remote unchecked")); }
+    if (remote.error) {
+      return status("error", "error", remote.error === "refMissing" ? t("Downloaded · remote ref missing") : t("Downloaded · check failed"));
+    }
+    return checkout.head === remote.sha
+      ? status("success", "check", t("Matches remote"))
+      : status("info", "git-compare", t("Differs from remote"));
   }
 
   private dependencyReason(name: string) {
