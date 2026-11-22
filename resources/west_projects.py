@@ -26,10 +26,12 @@ def manifests():
 
 
 def catalog():
+    from west_status import checkout
     direct, resolved, partial = manifests()
     root_names = {p.name for p in direct.projects[1:]}
     return {"partial": partial, "projects": [
         {"name": p.name, "url": p.url, "revision": p.revision, "path": p.path,
+         "checkout": checkout(p),
          "extra": isinstance(p.userdata, dict) and p.userdata.get(MARK) is True,
          "imported": p.name not in root_names}
         for p in resolved.projects[1:]
@@ -200,8 +202,9 @@ def activate_overlay(data):
 
 
 if __name__ == "__main__":
+    sys.dont_write_bytecode = True
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["list", "edit", "activate-overlay", "update"])
+    parser.add_argument("action", choices=["list", "edit", "activate-overlay", "dependencies", "remote-revision", "update"])
     parser.add_argument("--narrow", action="store_true")
     parser.add_argument("--keep-descendants", action="store_true")
     parser.add_argument("names", nargs="*")
@@ -209,6 +212,27 @@ if __name__ == "__main__":
     try:
         if args.action == "list":
             print(json.dumps(catalog()))
+        elif args.action == "remote-revision":
+            from west_status import remote_revision
+            request = json.load(sys.stdin)
+            project = next(p for p in manifests()[1].projects[1:] if p.name == request["name"])
+            if project.url != request["url"] or project.revision != request["revision"]:
+                raise ValueError("The manifest changed. Refresh and try again.")
+            print(json.dumps(remote_revision(project)))
+        elif args.action == "dependencies":
+            from west_dependencies import discover
+            inputs = json.load(sys.stdin)
+            try:
+                manifest = Manifest.from_file()
+            except ManifestImportFailed as error:
+                direct = Manifest.from_file(import_flags=ImportFlag.IGNORE_PROJECTS)
+                provider = error.project
+                if provider is None or provider.name not in {p.name for p in direct.projects[1:]} or provider.is_cloned():
+                    raise
+                print(json.dumps({"projects": [{"name": provider.name, "missing": True,
+                      "requiredBy": ["west.yml"], "sources": [f"west.yml (import: {error.imp})"]}], "unknown": []}))
+            else:
+                print(json.dumps(discover(inputs, manifest)))
         elif args.action == "edit":
             data = json.load(sys.stdin)
             result = prepare_edit(data) if "entries" in data else edit_manifest(data["source"], data["project"], data["remove"])

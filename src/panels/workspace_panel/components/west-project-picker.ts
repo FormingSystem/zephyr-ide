@@ -10,11 +10,13 @@ import { moduleMatcher, moduleSearchBox } from "../../webview_shared/module-sear
 import type { GitHubRepository } from "../../../setup_utilities/github-repositories";
 import { changeSelection, westSelectionPane, westSelectionToolbar, type SelectionAction } from "../../webview_shared/west-selection";
 import { panelText as t } from "../../webview_shared/panel-text";
-import type { WestCatalog, WestProject } from "../../../setup_utilities/west-projects";
+import type { DependencyReference, DetectedDependency, WestCatalog, WestProject } from "../../../setup_utilities/west-projects";
 
 export interface WestPickerData extends WestCatalog {
   scope: string;
   selected: string[];
+  detected?: DetectedDependency[];
+  unresolved?: DependencyReference[];
   error?: string;
   editError?: string;
   added?: string[];
@@ -23,6 +25,7 @@ export interface WestPickerData extends WestCatalog {
 @customElement("west-project-picker")
 export class WestProjectPicker extends ZephyrLitElement {
   @property({ attribute: false }) catalog?: WestPickerData;
+  @property({ type: Boolean }) checking = false;
   @property({ type: Boolean }) inactive = false;
   @state() private selected = new Set<string>();
   @state() private query = "";
@@ -30,6 +33,7 @@ export class WestProjectPicker extends ZephyrLitElement {
   @state() private discover = false;
   @state() private adding = false;
   @state() private lineCount = 0;
+  private checkedScope?: string;
   @state() private editing?: WestProject;
 
   protected willUpdate(changes: PropertyValues) {
@@ -37,6 +41,13 @@ export class WestProjectPicker extends ZephyrLitElement {
       const known = new Set(this.catalog.projects.map(p => p.name));
       this.selected = new Set(this.catalog.selected.filter(n => known.has(n)));
       if ((changes.get("catalog") as WestPickerData | undefined)?.scope !== this.catalog.scope) { this.query = ""; this.regex = false; this.discover = false; this.adding = false; }
+      const checkoutKey = JSON.stringify([this.catalog.scope, ...this.catalog.projects
+        .filter(p => p.checkout.state === "cloned" && !/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i.test(p.revision))
+        .map(p => [p.name, p.url, p.revision, p.checkout.head])]);
+      if (this.checkedScope !== checkoutKey) {
+        this.checkedScope = checkoutKey;
+        this.send("refreshWestProjects");
+      }
       if (this.catalog.added) { this.adding = false; }
     }
   }
@@ -78,6 +89,26 @@ export class WestProjectPicker extends ZephyrLitElement {
       ? t("Official GitHub repositories") : t("Custom Git repositories");
   }
 
+  private checkoutStatus(project: WestProject) {
+    const { checkout, revision, remote } = project;
+    if (checkout.state === "absent") { return t("Not downloaded"); }
+    if (checkout.state === "invalid") { return t("Checkout unavailable"); }
+    if (/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/i.test(revision)) {
+      return checkout.head === revision.toLowerCase() ? t("At manifest revision") : t("Differs from manifest");
+    }
+    if (!remote) { return t("Downloaded · remote unchecked"); }
+    if (remote.error) { return remote.error === "refMissing" ? t("Downloaded · remote ref missing") : t("Downloaded · check failed"); }
+    return checkout.head === remote.sha ? t("Matches remote") : t("Differs from remote");
+  }
+
+  private dependencyReason(name: string) {
+    const dependency = this.catalog?.detected?.find(item => item.name === name);
+    if (dependency) {
+      return html`<small title=${dependency.sources.join("\n")}>${t("Required by {0}", dependency.requiredBy.join(", "))}</small>`;
+    }
+    return this.selected.has(name) ? html`<small>${t("Manually selected")}</small>` : nothing;
+  }
+
   private group(rows: WestProject[], label: string, pinned = false) {
     return html`<section class="wp-group" aria-label=${label}>
       ${pinned ? nothing : html`<h5>${label} <small>${rows.length}</small></h5>`}
@@ -86,9 +117,15 @@ export class WestProjectPicker extends ZephyrLitElement {
         <label title=${[p.url, p.revision].join("\n")}>
           <input type="checkbox" .checked=${live(this.selected.has(p.name))} ?disabled=${this.inactive}
             @change=${() => this.setSelection([p], "invert")}>
-          <span><strong>${p.name}</strong><small>${p.path}${pinned ? " · " + this.origin(p) : ""}</small></span>
+          <span><strong>${p.name}</strong><small>${p.path}${pinned ? " · " + this.origin(p) : ""}</small>${this.dependencyReason(p.name)}</span>
         </label>
-        <code title=${p.revision}>${/^[0-9a-f]{40,64}$/i.test(p.revision) ? p.revision.slice(0, 10) : p.revision}</code>
+        <span class="wp-checkout" title=${[p.checkout.head, p.remote?.sha].filter(Boolean).join(" → ")}>
+          ${this.checkoutStatus(p)}${p.remote && p.checkout.state === "cloned" ? html`<small>${t("Checked {0}", new Date(p.remote.checkedAt).toLocaleString())}</small>` : nothing}
+        </span>
+        <span class="wp-revision" title=${p.revision}>
+          <small>${t("Manifest revision")}</small><code>${/^[0-9a-f]{40,64}$/i.test(p.revision) ? p.revision.slice(0, 10) : p.revision}</code>
+          ${p.revision === "HEAD" ? html`<small>${t("Not pinned to a commit")}</small>` : nothing}
+        </span>
         ${!this.inactive ? html`<button type="button" aria-label=${t("Edit {0}", p.name)} @click=${() => this.showForm(undefined, p)}>${t("Edit")}</button><button type="button" aria-label=${t("Remove {0}", p.name)}
           @click=${() => this.send("editWestProject", { remove: p.name })}>${t("Remove")}</button>` : nothing}
       </div>`)}
@@ -116,7 +153,7 @@ export class WestProjectPicker extends ZephyrLitElement {
           <button type="button" ?disabled=${!data || !this.query.trim() || invalid}
             @click=${() => { this.discover = true; this.querySelector<WestRepositorySearch>("west-repository-search")?.runSearch(); }}>${t("Search GitHub sources")}</button>
           <button type="button" @click=${() => this.showForm()}>${t("Add Git repositories")}</button>`}
-        <button type="button" @click=${() => this.send("refreshWestProjects")}>${t("Refresh")}</button>
+        <button type="button" ?disabled=${this.checking} @click=${() => this.send("refreshWestProjects", { force: true })}>${this.checking ? t("Checking updates…") : t("Check for updates")}</button>
         <button type="button" @click=${() => this.send("openWestYml")}>${t("Open in Editor")}</button>
       </div>
       ${this.adding && !this.inactive ? html`<form @submit=${this.add}>
@@ -137,6 +174,7 @@ export class WestProjectPicker extends ZephyrLitElement {
       ${data?.editError ? html`<p role="alert">${data.editError}</p>` : nothing}
       ${invalid ? html`<p role="alert">${t("Invalid regular expression")}</p>` : nothing}
       ${!data ? html`<p role="status">${t("Loading west projects…")}</p>` : data.error ? html`<p role="alert">${data.error}</p>` : html`
+        ${data.unresolved?.map(ref => html`<p role="status" title=${ref.sources.join("\n")}><strong>${ref.name}</strong> · ${t("Required by {0}", ref.requiredBy.join(", "))} · ${t("No revision in the west manifest")}</p>`)}
         ${data.partial ? html`<p role="status">${t("Update the manifest provider and refresh to see its modules.")}</p>` : nothing}
         <div class="wp-tools">
           ${westSelectionToolbar(locked, action => this.setSelection(rows, action))}

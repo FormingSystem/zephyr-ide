@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { l10n } from "vscode";
 import { HttpClient } from "typed-rest-client/HttpClient";
 
 export interface GitHubRepository {
@@ -33,7 +34,7 @@ export async function findRepositories(owner: string, query?: string): Promise<G
     const result = await getPage<{ items: GitHubRepository[] }>("search/repositories?" + params);
     return result.items.map(({ full_name, default_branch }) => ({ full_name, default_branch }));
   }
-  if (!/^[a-z0-9-]{1,39}$/i.test(owner)) { throw Error("Invalid GitHub owner"); }
+  if (!/^[a-z0-9-]{1,39}$/i.test(owner)) { throw Error(l10n.t("Invalid GitHub owner")); }
   const key = owner.toLowerCase();
   const cached = owners.get(key);
   if (cached && cached.expires > Date.now()) { return cached.items; }

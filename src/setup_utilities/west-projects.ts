@@ -8,7 +8,16 @@ import { SetupState, WorkspaceConfig } from "./types";
 import { getVenvPath } from "./workspace-config";
 import { parseWestConfigManifestPath } from "./west-config-parser";
 
+export interface RemoteRevision {
+  checkedAt: string;
+  localHead?: string;
+  sha?: string;
+  error?: "unavailable" | "refMissing";
+}
+
 export interface WestProject {
+  checkout: { state: "absent" | "invalid" | "cloned"; head?: string };
+  remote?: RemoteRevision;
   name: string;
   url: string;
   revision: string;
@@ -29,15 +38,52 @@ export interface WestSelection {
 }
 
 export function projectScope(ws: WorkspaceConfig, root: string) {
-  return JSON.stringify([path.resolve(root), ws.activeProject ?? ""]);
+  const key = ws.activeProject ?? "";
+  return JSON.stringify([path.resolve(root), key, ws.projectStates?.[key]?.activeBuildConfig ?? ""]);
+}
+
+export interface DependencyReference {
+  name: string;
+  sources: string[];
+  requiredBy: string[];
+}
+
+export interface DetectedDependency extends DependencyReference {
+  missing: boolean;
+  needsUpdate?: boolean;
+}
+
+interface ProjectSelection {
+  manual: string[];
+  detected: DetectedDependency[];
+  excluded: string[];
+  unresolved?: DependencyReference[];
+}
+
+export function projectSelection(context: vscode.ExtensionContext, scope: string): ProjectSelection {
+  const current = context.workspaceState.get<ProjectSelection>("westSelection:" + scope);
+  if (current) { return current; }
+  // Older releases saved only a flat list per project and did not record its origin.
+  const legacyScope = JSON.stringify(JSON.parse(scope).slice(0, 2));
+  return { manual: context.workspaceState.get("westProjects:" + legacyScope, []), detected: [], excluded: [] };
 }
 
 export function savedProjects(context: vscode.ExtensionContext, scope: string) {
-  return context.workspaceState.get<string[]>("westProjects:" + scope, []);
+  const { manual, detected, excluded } = projectSelection(context, scope);
+  return [...new Set([...manual, ...detected.map(d => d.name).filter(n => !excluded.includes(n))])];
 }
 
 export function saveProjects(context: vscode.ExtensionContext, scope: string, names: string[]) {
-  return context.workspaceState.update("westProjects:" + scope, [...new Set(names)]);
+  const selection = projectSelection(context, scope);
+  const detected = selection.detected.map(d => d.name);
+  return context.workspaceState.update("westSelection:" + scope, { ...selection,
+    manual: [...new Set(names.filter(n => !detected.includes(n) || selection.manual.includes(n)))],
+    excluded: detected.filter(n => !names.includes(n)) });
+}
+
+export function saveDependencies(context: vscode.ExtensionContext, scope: string, detected: DetectedDependency[], unresolved: DependencyReference[] = []) {
+  const { manual } = projectSelection(context, scope);
+  return context.workspaceState.update("westSelection:" + scope, { manual, detected, unresolved, excluded: [] });
 }
 
 export function projectHelper(context: vscode.ExtensionContext, state: SetupState) {
@@ -54,7 +100,7 @@ function invoke<T>(context: vscode.ExtensionContext, state: SetupState, action: 
       cwd: state.setupPath, windowsHide: true, timeout: 30000, maxBuffer: 16 * 1024 * 1024,
       env: { ...process.env, PYTHONIOENCODING: "utf-8" },
     }, (error, stdout, stderr) => {
-      if (error) { reject(new Error(stderr.trim() || error.message)); return; }
+      if (error) { reject(new Error(vscode.l10n.t(stderr.trim() || error.message))); return; }
       try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); }
     });
     child.stdin?.on("error", () => { /* execFile reports child errors */ });
@@ -62,8 +108,27 @@ function invoke<T>(context: vscode.ExtensionContext, state: SetupState, action: 
   });
 }
 
+export interface DependencyInputs {
+  cmakeArgs: string[]; application: string; projectName: string; zephyr: string; board?: string; boardDir?: string; configs: string[];
+}
+
+export function discoverDependencies(context: vscode.ExtensionContext, state: SetupState, inputs: DependencyInputs) {
+  return invoke<{ projects: DetectedDependency[]; unknown: string[]; unresolved?: DependencyReference[] }>(
+    context, state, "dependencies", inputs);
+}
+
+function remoteKey(state: SetupState, p: WestProject) {
+  return "westRemote:" + JSON.stringify([path.resolve(state.setupPath), p.name, p.url, p.revision]);
+}
+
+export async function checkWestRemote(context: vscode.ExtensionContext, state: SetupState, project: WestProject) {
+  const remote = await invoke<RemoteRevision>(context, state, "remote-revision", project);
+  await context.workspaceState.update(remoteKey(state, project), { ...remote, localHead: project.checkout.head });
+}
+
 export async function readWestCatalog(context: vscode.ExtensionContext, state: SetupState) {
   const data = await invoke<WestCatalog>(context, state, "list");
+  for (const p of data.projects) { p.remote = context.workspaceState.get<RemoteRevision>(remoteKey(state, p)); }
   data.projects.sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }) || a.name.localeCompare(b.name, "en"));
   return data;
 }
@@ -75,6 +140,7 @@ export async function chooseWestProjects(context: vscode.ExtensionContext, ws: W
   if (!selection) {
     const saved = savedProjects(context, scope);
     const { projects, partial } = await readWestCatalog(context, state);
+    const { detected } = projectSelection(context, scope);
     const allLabel = vscode.l10n.t("Run a full west update");
     const items: (vscode.QuickPickItem & { name?: string })[] = [
       { label: allLabel, alwaysShow: true },
@@ -83,6 +149,7 @@ export async function chooseWestProjects(context: vscode.ExtensionContext, ws: W
       items.push({ label: extra ? vscode.l10n.t("Additional repositories") : vscode.l10n.t("Manifest repositories"), kind: vscode.QuickPickItemKind.Separator });
       items.push(...projects.filter(p => p.extra === extra).map(p => ({
         name: p.name, label: p.name, description: p.path, picked: saved.includes(p.name),
+        detail: [p.revision, detected.find(d => d.name === p.name)?.requiredBy.join(", ")].filter(Boolean).join(" ← "),
       })));
     }
     const picked = await vscode.window.showQuickPick(items, { canPickMany: true, matchOnDescription: true,
