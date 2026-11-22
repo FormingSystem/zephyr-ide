@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import "./west-project-picker";
+import type { WestPickerData } from "./west-project-picker";
 import { panelText } from "../../webview_shared/panel-text";
 import { html, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
@@ -29,8 +31,8 @@ import type {
 @customElement('workspace-app')
 export class WorkspaceApp extends ZephyrLitElement {
   @state() private _data?: WorkspacePanelData;
-  @state() private _westYmlContent = '';
-  @state() private _westYmlDirty = false;
+  @state() private modulesTab = false;
+  @state() private _catalog?: WestPickerData;
   @state() private _progressData?: SetupProgressData;
   @state() private _workspaceSetupActive = false;
   @state() private _statusAnnouncement = '';
@@ -47,7 +49,6 @@ export class WorkspaceApp extends ZephyrLitElement {
     super.disconnectedCallback();
     window.removeEventListener('message', this._onMessage);
     if (this._dismissTimer) { clearTimeout(this._dismissTimer); }
-    if (this._dirtyTimer) { clearTimeout(this._dirtyTimer); }
   }
 
   private _onMessage = (e: MessageEvent) => {
@@ -62,9 +63,12 @@ export class WorkspaceApp extends ZephyrLitElement {
           this._workspaceSetupActive = false;
         }
         break;
-      case 'westYmlContent':
-        this._westYmlContent = msg.content ?? '';
-        this._westYmlDirty = false;
+      case 'showWestModules':
+        this.modulesTab = true;
+        void this.updateComplete.then(() => this.querySelector<HTMLInputElement>('west-project-picker input[type="search"]')?.focus());
+        break;
+      case 'westProjects':
+        this._catalog = msg;
         break;
       case 'workspaceSetupProgress':
         this._handleProgress(msg.data as SetupProgressData);
@@ -107,13 +111,6 @@ export class WorkspaceApp extends ZephyrLitElement {
       this._workspaceSetupActive = true;
     }
     this._send(cmd);
-  }
-
-  private _saveAndUpdateWestYml() {
-    const editor = this.querySelector('#westYmlEditor') as HTMLTextAreaElement | null;
-    if (!editor) { return; }
-    this._send('saveAndUpdateWestYml', { content: editor.value });
-    this._westYmlDirty = false;
   }
 
   private _activateWorkspace(path: string) {
@@ -325,16 +322,23 @@ export class WorkspaceApp extends ZephyrLitElement {
     return html`
       <div class="ws-state ws-state-ready">
         ${readyBanner}
+        <nav class="west-selection-tools wp-tabs" aria-label=${panelText("Workspace Setup")}>
+          <button aria-pressed=${!this.modulesTab} @click=${() => { this.modulesTab = false; }}>${panelText("Workspace Information")}</button>
+          <button aria-pressed=${this.modulesTab} @click=${() => { this.modulesTab = true; }}>${panelText("West Git modules")}</button>
+        </nav>
+        ${this.modulesTab ? html`
+          <div class="section-container"><west-project-picker .catalog=${this._catalog} .inactive=${disabled}></west-project-picker></div>
+        ` : html`
 
         <div class="section-container">
           <h3>${panelText("Workspace Information")}</h3>
-          <div class="info-box">
-            <p><strong>${panelText("Current Folder:")}</strong> <code>${info.currentFolderPath}</code></p>
-            <p><strong>${panelText("West Workspace Path:")}</strong> <code>${info.westWorkspacePath}</code></p>
-            <p><strong>${panelText("West.yml Location:")}</strong> <code>${info.westYmlPath}</code></p>
-            <p><strong>${panelText("Python .venv Location:")}</strong> <code>${info.venvPath}</code></p>
-            <p><strong>${panelText("Zephyr Version:")}</strong> <code>${info.zephyrVersion}</code></p>
-          </div>
+          <dl class="info-box workspace-paths">
+            <dt>${panelText("Current Folder:")}</dt><dd><code>${info.currentFolderPath}</code></dd>
+            <dt>${panelText("West Workspace Path:")}</dt><dd><code>${info.westWorkspacePath}</code></dd>
+            <dt>${panelText("West.yml Location:")}</dt><dd><code>${info.westYmlPath}</code></dd>
+            <dt>${panelText("Python .venv Location:")}</dt><dd><code>${info.venvPath}</code></dd>
+            <dt>${panelText("Zephyr Version:")}</dt><dd><code>${info.zephyrVersion}</code></dd>
+          </dl>
           ${d.readiness === 'ready' ? html`
             <div class="button-group" style="margin-top:12px;">
               <vscode-button appearance="secondary" @click=${() => this._send('openProjectPanel')}>
@@ -350,47 +354,8 @@ export class WorkspaceApp extends ZephyrLitElement {
             </div>`)}
         </div>
 
-        <div class="section-container">
-          <h3>${panelText("West Configuration")}</h3>
-          <div class="west-yml-editor">
-            <div class="editor-header">
-              <label for="westYmlEditor">west.yml${this._westYmlDirty ? ' •' : ''}</label>
-              <vscode-button appearance="secondary" @click=${() => this._send('openWestYml')}>
-                <vscode-icon slot="start-icon" name="go-to-file"></vscode-icon>
-                ${panelText("Open in Editor")}
-              </vscode-button>
-            </div>
-            <textarea id="westYmlEditor" class="west-yml-textarea" rows="15"
-              placeholder="${panelText("Loading west.yml...")}"
-              ?readonly=${disabled}
-              .value=${this._westYmlContent}
-              @input=${this._onWestYmlInput}
-              @keydown=${this._onTextareaKeydown}></textarea>
-            ${disabled ? nothing : html`
-            <div class="editor-actions">
-              <vscode-button @click=${this._saveAndUpdateWestYml}
-                ?disabled=${!this._westYmlDirty}
-                title=${this._westYmlDirty ? panelText("Save edits and run west update") : panelText("No pending changes")}>
-                <vscode-icon slot="start-icon" name="save"></vscode-icon>
-                ${panelText("Save and West Update")}
-              </vscode-button>
-            </div>`}
-          </div>
-        </div>
-
-        ${!d.isNonActive ? this._renderWorkspaceManagement() : nothing}
+        ${!d.isNonActive ? this._renderWorkspaceManagement() : nothing}`}
       </div>`;
-  }
-
-  private _dirtyTimer: ReturnType<typeof setTimeout> | null = null;
-
-  private _onWestYmlInput(e: Event) {
-    const ta = e.target as HTMLTextAreaElement;
-    if (this._dirtyTimer) { clearTimeout(this._dirtyTimer); }
-    this._dirtyTimer = setTimeout(() => {
-      this._westYmlDirty = ta.value !== this._westYmlContent;
-      this._dirtyTimer = null;
-    }, 200);
   }
 
   private _renderWorkspaceManagement() {
@@ -443,20 +408,6 @@ export class WorkspaceApp extends ZephyrLitElement {
           </vscode-button>
         </div>
       </div>`;
-  }
-
-  // ── Tab handling in textarea ──────────────────────────────
-
-  private _onTextareaKeydown(e: KeyboardEvent) {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const ta = e.target as HTMLTextAreaElement;
-      const start = ta.selectionStart;
-      const end = ta.selectionEnd;
-      ta.value = ta.value.substring(0, start) + '  ' + ta.value.substring(end);
-      ta.selectionStart = ta.selectionEnd = start + 2;
-      this._westYmlDirty = ta.value !== this._westYmlContent;
-    }
   }
 
   private _renderOptionCard(

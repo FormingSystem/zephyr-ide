@@ -767,6 +767,16 @@
         "title": "%zephyr-ide.west-init.title%"
       },
       {
+        "command": "zephyr-ide.select-west-modules",
+        "title": "%zephyr-ide.select-west-modules.title%",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "zephyr-ide.update-selected-west-modules",
+        "title": "%zephyr-ide.update-selected-west-modules.title%",
+        "icon": "$(sync)"
+      },
+      {
         "command": "zephyr-ide.west-update",
         "title": "%zephyr-ide.west-update.title%"
       },

@@ -20,6 +20,8 @@
   "zephyr-ide.modify-zephyr-ide-commands.title": "Zephyr IDE: 编辑命令（zephyr-ide.json）",
   "zephyr-ide.run-zephyr-ide-commands.title": "Zephyr IDE: 运行 zephyr-ide.json 中的命令",
   "zephyr-ide.west-init.title": "Zephyr IDE: 初始化 west 工作区",
+  "zephyr-ide.select-west-modules.title": "Zephyr IDE: 选择 west 模块",
+  "zephyr-ide.update-selected-west-modules.title": "Zephyr IDE: 更新已勾选的 west 模块",
   "zephyr-ide.west-update.title": "Zephyr IDE: 更新 west 工作区",
   "zephyr-ide.create-new-west-workspace.title": "Zephyr IDE: 新建 west 工作区",
   "zephyr-ide.refresh-west-workspaces.title": "Zephyr IDE: 刷新 west 工作区列表",
