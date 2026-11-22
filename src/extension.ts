@@ -747,8 +747,7 @@ export async function activate(context: vscode.ExtensionContext) {
     wsConfig
   );
   const extensionSetupView = new ExtensionSetupView(
-    context.extensionPath,
-    context,
+    context.extensionUri,
     wsConfig,
     globalConfig
   );
@@ -853,7 +852,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const activeProjectTreeView = registerTreeView(context, "zephyrIdeActiveProject", activeProjectView);
   registerTreeView(context, "zephyrIdeProjects", projectTreeView);
   registerTreeView(context, "zephyrIdeProjectStatus", projectConfigView);
-  registerTreeView(context, "zephyrIdeExtensionSetup", extensionSetupView);
+  registerWebviewView(context, "zephyrIdeExtensionSetup", extensionSetupView);
   registerTreeView(context, "zephyrIdeWestWorkspaces", westWorkspaceView);
 
   // -- ActiveProjectView inline action commands --

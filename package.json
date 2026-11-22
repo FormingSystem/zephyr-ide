@@ -655,6 +655,7 @@
       "zephyr-ide-main": [
         {
           "id": "zephyrIdeExtensionSetup",
+          "type": "webview",
           "name": "%zephyrIdeExtensionSetup.name%",
           "icon": "media/logo_small.jpg",
           "contextualTitle": "%zephyrIdeExtensionSetup.contextualTitle%"
