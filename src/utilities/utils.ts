@@ -855,7 +855,7 @@ async function executeTask(task: vscode.Task) {
   return taskDone;
 }
 
-export async function executeTaskHelperInPythonEnv(setupState: SetupState | undefined, taskName: string, cmd: string, cwd: string | undefined, overrideTempOnWindows: boolean = false) {
+export async function executeTaskHelperInPythonEnv(setupState: SetupState | undefined, taskName: string, cmd: string | string[], cwd: string | undefined, overrideTempOnWindows: boolean = false) {
   // VS Code's environmentVariableCollection doesn't reliably propagate to task
   // shells in all environments (macOS, WSL, Windows CI/headless).  Inject the
   // required env vars directly into the task shell options instead.
@@ -896,8 +896,8 @@ export async function executeTaskHelperInPythonEnv(setupState: SetupState | unde
   return await executeTaskHelper(taskName, cmd, cwd, env);
 }
 
-export async function executeTaskHelper(taskName: string, cmd: string, cwd: string | undefined, env?: { [key: string]: string }) {
-  outputCommand(taskName, cmd);
+export async function executeTaskHelper(taskName: string, cmd: string | string[], cwd: string | undefined, env?: { [key: string]: string }) {
+  outputCommand(taskName, Array.isArray(cmd) ? cmd.join(" ") : cmd);
   const options: vscode.ShellExecutionOptions = {
     // Coerce empty strings to undefined — VS Code's ShellExecution rejects
     // an empty-string cwd and emits "An unknown error occurred".
@@ -905,7 +905,9 @@ export async function executeTaskHelper(taskName: string, cmd: string, cwd: stri
     ...(env && { env }),
   };
 
-  const exec = new vscode.ShellExecution(cmd, options);
+  const exec = Array.isArray(cmd)
+    ? new vscode.ProcessExecution(cmd[0], cmd.slice(1), options)
+    : new vscode.ShellExecution(cmd, options);
 
   // Task
   const task = new vscode.Task(
