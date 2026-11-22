@@ -17,6 +17,7 @@ limitations under the License.
 
 import * as vscode from "vscode";
 import * as path from "upath";
+import { windows7ZipDirectory } from "../utilities/windows-7zip";
 import * as nativePath from "path";
 import * as fs from "fs-extra";
 import * as https from "https";
@@ -254,21 +255,9 @@ async function fetchFullReleaseAssets(
 // Archive extraction
 // ---------------------------------------------------------------------------
 
-const WINDOWS_7ZIP_DIR = "C:\\Program Files\\7-Zip";
-let windows7ZipDirExists: boolean | undefined;
-
-function hasDefaultWindows7ZipDir(): boolean {
-    if (windows7ZipDirExists === undefined) {
-        windows7ZipDirExists = fs.existsSync(WINDOWS_7ZIP_DIR);
-    }
-    return windows7ZipDirExists;
-}
-
 function withWindows7ZipOnPath(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-    if (os.platform() !== "win32" || !hasDefaultWindows7ZipDir()) {
-        return env;
-    }
-    return prependWindowsPath(env, WINDOWS_7ZIP_DIR);
+    const dir = windows7ZipDirectory(env);
+    return dir ? prependWindowsPath(env, dir) : env;
 }
 
 function prependWindowsPath(env: NodeJS.ProcessEnv, pathEntry: string): NodeJS.ProcessEnv {
