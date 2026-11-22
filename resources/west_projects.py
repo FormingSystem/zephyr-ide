@@ -26,10 +26,12 @@ def manifests():
 
 
 def catalog():
+    from west_status import checkout
     direct, resolved, partial = manifests()
     root_names = {p.name for p in direct.projects[1:]}
     return {"partial": partial, "projects": [
         {"name": p.name, "url": p.url, "revision": p.revision, "path": p.path,
+         "checkout": checkout(p),
          "extra": isinstance(p.userdata, dict) and p.userdata.get(MARK) is True,
          "imported": p.name not in root_names}
         for p in resolved.projects[1:]
@@ -200,8 +202,9 @@ def activate_overlay(data):
 
 
 if __name__ == "__main__":
+    sys.dont_write_bytecode = True
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["list", "edit", "activate-overlay", "update"])
+    parser.add_argument("action", choices=["list", "edit", "activate-overlay", "remote-revision", "update"])
     parser.add_argument("--narrow", action="store_true")
     parser.add_argument("--keep-descendants", action="store_true")
     parser.add_argument("names", nargs="*")
@@ -209,6 +212,13 @@ if __name__ == "__main__":
     try:
         if args.action == "list":
             print(json.dumps(catalog()))
+        elif args.action == "remote-revision":
+            from west_status import remote_revision
+            request = json.load(sys.stdin)
+            project = next(p for p in manifests()[1].projects[1:] if p.name == request["name"])
+            if project.url != request["url"] or project.revision != request["revision"]:
+                raise ValueError("The manifest changed. Refresh and try again.")
+            print(json.dumps(remote_revision(project)))
         elif args.action == "edit":
             data = json.load(sys.stdin)
             result = prepare_edit(data) if "entries" in data else edit_manifest(data["source"], data["project"], data["remove"])
