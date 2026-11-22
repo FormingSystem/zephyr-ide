@@ -1380,7 +1380,7 @@
     "debuggers": [
       {
         "type": "zephyr-ide-cortex",
-        "label": "Zephyr IDE Cortex",
+        "label": "%zephyr-ide-cortex.label%",
         "languages": [
           "c",
           "cpp"
@@ -1399,19 +1399,19 @@
                   "qemu",
                   "external"
                 ],
-                "description": "cortex-debug server type. Preferred over `runner` for native debuggers; Zephyr IDE reads the matching runner's args from runners.yaml automatically. For bridged targets (nrfjprog, linkserver, esp32, stm32cubeprogrammer, …) use the Zephyr IDE West debugger instead."
+                "description": "%zephyr-ide-cortex.launch.properties.servertype.description%"
               },
               "runner": {
                 "type": "string",
-                "description": "Optional Zephyr runner to use. Prefer `servertype` for native cortex-debug servers (jlink, openocd, pyocd, stlink, bmp, qemu). `runner` is mainly for bridged targets driven via `west debugserver` (cortex-debug servertype \"external\"): nrfjprog, linkserver, esp32, stm32cubeprogrammer. When both are omitted, the runner is read from runners.yaml's debug-runner."
+                "description": "%zephyr-ide-cortex.launch.properties.runner.description%"
               },
               "project": {
                 "type": "string",
-                "description": "Pin this debug configuration to a specific Zephyr IDE project name. When omitted, the active project is used. If `build` is also omitted, the project's active build is used."
+                "description": "%zephyr-ide-cortex.launch.properties.project.description%"
               },
               "build": {
                 "type": "string",
-                "description": "Pin this debug configuration to a specific build configuration name within the project. When omitted, the project's active build is used."
+                "description": "%zephyr-ide-cortex.launch.properties.build.description%"
               },
               "ask": {
                 "type": "string",
@@ -1422,33 +1422,33 @@
                   "askBuild"
                 ],
                 "enumDescriptions": [
-                  "Use the active project and active build silently (default).",
-                  "Prompt for both project and build at every launch.",
-                  "Prompt for project at launch; use that project's active build.",
-                  "Use the active project; prompt for which build to debug."
+                  "%zephyr-ide-cortex.launch.properties.ask.enumDescriptions.0%",
+                  "%zephyr-ide-cortex.launch.properties.ask.enumDescriptions.1%",
+                  "%zephyr-ide-cortex.launch.properties.ask.enumDescriptions.2%",
+                  "%zephyr-ide-cortex.launch.properties.ask.enumDescriptions.3%"
                 ],
                 "default": "auto",
-                "description": "Controls whether Zephyr IDE asks the user to pick a project and/or build at session start. Ignored when `project` or `build` are explicitly set."
+                "description": "%zephyr-ide-cortex.launch.properties.ask.description%"
               },
               "svdFile": {
                 "type": "string",
-                "description": "Optional path to an SVD file for the cortex-debug peripheral viewer. When omitted, Zephyr IDE searches the board directory for a .svd file."
+                "description": "%zephyr-ide-cortex.launch.properties.svdFile.description%"
               },
               "executable": {
                 "type": "string",
-                "description": "Override the ELF file to debug. When omitted, Zephyr IDE uses elf_file from runners.yaml."
+                "description": "%zephyr-ide-cortex.launch.properties.executable.description%"
               },
               "gdbPath": {
                 "type": "string",
-                "description": "Override the GDB executable. When omitted, Zephyr IDE uses the gdb path from runners.yaml."
+                "description": "%zephyr-ide-cortex.launch.properties.gdbPath.description%"
               },
               "cwd": {
                 "type": "string",
-                "description": "Working directory for the debug session. Defaults to the workspace folder."
+                "description": "%zephyr-ide-cortex.launch.properties.cwd.description%"
               },
               "BMPGDBSerialPort": {
                 "type": "string",
-                "description": "Black Magic Probe GDB serial port (e.g. \"/dev/ttyACM0\" on Linux/macOS, \"COM3\" on Windows, or \"${config:bmp_serial_port}\"). Required when using marus25.cortex-debug; optional when using mylonics.bmp-debug (auto-discovers the probe)."
+                "description": "%zephyr-ide-cortex.launch.properties.BMPGDBSerialPort.description%"
               },
               "interface": {
                 "type": "string",
@@ -1457,153 +1457,153 @@
                   "jtag",
                   "cjtag"
                 ],
-                "description": "Debug transport. Forwarded to cortex-debug."
+                "description": "%zephyr-ide-cortex.launch.properties.interface.description%"
               },
               "device": {
                 "type": "string",
-                "description": "Target device identifier (e.g. \"STM32F401RE\", \"nRF52840_xxAA\"). Forwarded to cortex-debug."
+                "description": "%zephyr-ide-cortex.launch.properties.device.description%"
               },
               "configFiles": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "OpenOCD .cfg files. Auto-derived from runners.yaml's --openocd-config / --cmd-pre-init args; supply here to override."
+                "description": "%zephyr-ide-cortex.launch.properties.configFiles.description%"
               },
               "searchDir": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "OpenOCD search directories (--openocd-search). Auto-derived from runners.yaml; supply here to extend."
+                "description": "%zephyr-ide-cortex.launch.properties.searchDir.description%"
               },
               "serverpath": {
                 "type": "string",
-                "description": "Path to the GDB server executable (openocd, JLinkGDBServerCL, pyocd, …). When omitted, cortex-debug looks on PATH; Zephyr IDE auto-fills runners.yaml's openocd path and the venv pyocd when available."
+                "description": "%zephyr-ide-cortex.launch.properties.serverpath.description%"
               },
               "serverArgs": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Extra arguments appended to the GDB server's command line. Zephyr IDE forwards unrecognised pyocd/jlink args here automatically; use this field to add more."
+                "description": "%zephyr-ide-cortex.launch.properties.serverArgs.description%"
               },
               "gdbTarget": {
                 "type": "string",
-                "description": "host:port the GDB client connects to. Only meaningful for servertype \"external\". When set, Zephyr IDE skips spawning `west debugserver` for bridged runners and uses your value directly."
+                "description": "%zephyr-ide-cortex.launch.properties.gdbTarget.description%"
               },
               "targetId": {
                 "type": "string",
-                "description": "pyocd target (--target). Auto-derived from runners.yaml's --target / -t for pyocd."
+                "description": "%zephyr-ide-cortex.launch.properties.targetId.description%"
               },
               "speed": {
                 "type": "number",
-                "description": "J-Link debug interface speed in kHz. Forwarded to cortex-debug."
+                "description": "%zephyr-ide-cortex.launch.properties.speed.description%"
               },
               "ipAddress": {
                 "type": "string",
-                "description": "J-Link / cortex-debug remote server IP address."
+                "description": "%zephyr-ide-cortex.launch.properties.ipAddress.description%"
               },
               "port": {
                 "type": "number",
-                "description": "GDB server port. Cortex-debug uses this when servertype is \"external\" without a gdbTarget host."
+                "description": "%zephyr-ide-cortex.launch.properties.port.description%"
               },
               "rttConfig": {
                 "type": "object",
-                "description": "RTT decoder configuration. Auto-populated by Zephyr IDE when `--enable-rtt` is set on the runner's extraArgs; override here for custom decoders."
+                "description": "%zephyr-ide-cortex.launch.properties.rttConfig.description%"
               },
               "swoConfig": {
                 "type": "object",
-                "description": "SWO/SWV configuration object passed to cortex-debug."
+                "description": "%zephyr-ide-cortex.launch.properties.swoConfig.description%"
               },
               "runToEntryPoint": {
                 "type": "string",
-                "description": "Run to this symbol on launch (e.g. \"main\")."
+                "description": "%zephyr-ide-cortex.launch.properties.runToEntryPoint.description%"
               },
               "breakAfterReset": {
                 "type": "boolean",
-                "description": "Break after reset instead of running to entry."
+                "description": "%zephyr-ide-cortex.launch.properties.breakAfterReset.description%"
               },
               "preLaunchCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "GDB commands executed before the program is loaded."
+                "description": "%zephyr-ide-cortex.launch.properties.preLaunchCommands.description%"
               },
               "postLaunchCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "GDB commands executed after the program is loaded but before it runs."
+                "description": "%zephyr-ide-cortex.launch.properties.postLaunchCommands.description%"
               },
               "preAttachCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "GDB commands executed before attaching."
+                "description": "%zephyr-ide-cortex.launch.properties.preAttachCommands.description%"
               },
               "postAttachCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "GDB commands executed after attaching."
+                "description": "%zephyr-ide-cortex.launch.properties.postAttachCommands.description%"
               },
               "preResetCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "GDB commands executed before reset/restart."
+                "description": "%zephyr-ide-cortex.launch.properties.preResetCommands.description%"
               },
               "postResetCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "GDB commands executed after reset/restart."
+                "description": "%zephyr-ide-cortex.launch.properties.postResetCommands.description%"
               },
               "postRestartCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Alias of postResetCommands honoured by cortex-debug."
+                "description": "%zephyr-ide-cortex.launch.properties.postRestartCommands.description%"
               },
               "overrideLaunchCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "If set, REPLACES the standard cortex-debug launch sequence (file/load/break/run)."
+                "description": "%zephyr-ide-cortex.launch.properties.overrideLaunchCommands.description%"
               },
               "overrideAttachCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "If set, REPLACES the standard cortex-debug attach sequence."
+                "description": "%zephyr-ide-cortex.launch.properties.overrideAttachCommands.description%"
               },
               "overrideResetCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "If set, REPLACES the standard cortex-debug reset sequence."
+                "description": "%zephyr-ide-cortex.launch.properties.overrideResetCommands.description%"
               },
               "overrideRestartCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "If set, REPLACES the standard cortex-debug restart sequence."
+                "description": "%zephyr-ide-cortex.launch.properties.overrideRestartCommands.description%"
               },
               "liveWatch": {
                 "type": "object",
-                "description": "Live-watch configuration object passed to cortex-debug."
+                "description": "%zephyr-ide-cortex.launch.properties.liveWatch.description%"
               },
               "showDevDebugOutput": {
                 "type": "string",
@@ -1614,15 +1614,15 @@
                   "both",
                   "vscode"
                 ],
-                "description": "cortex-debug developer log verbosity."
+                "description": "%zephyr-ide-cortex.launch.properties.showDevDebugOutput.description%"
               },
               "objdumpPath": {
                 "type": "string",
-                "description": "Path to objdump for the disassembly view. Defaults to gdb's sibling tool."
+                "description": "%zephyr-ide-cortex.launch.properties.objdumpPath.description%"
               },
               "nmPath": {
                 "type": "string",
-                "description": "Path to nm for the global-symbol view. Defaults to gdb's sibling tool."
+                "description": "%zephyr-ide-cortex.launch.properties.nmPath.description%"
               }
             }
           },
@@ -1639,19 +1639,19 @@
                   "qemu",
                   "external"
                 ],
-                "description": "cortex-debug server type. Preferred over `runner` for native debuggers. See `launch.servertype`."
+                "description": "%zephyr-ide-cortex.attach.properties.servertype.description%"
               },
               "runner": {
                 "type": "string",
-                "description": "Optional Zephyr runner. Prefer `servertype` for native cortex-debug servers. See `launch.runner` for the full list."
+                "description": "%zephyr-ide-cortex.attach.properties.runner.description%"
               },
               "project": {
                 "type": "string",
-                "description": "Pin this debug configuration to a specific Zephyr IDE project name. When omitted, the active project is used."
+                "description": "%zephyr-ide-cortex.attach.properties.project.description%"
               },
               "build": {
                 "type": "string",
-                "description": "Pin this debug configuration to a specific build configuration name. When omitted, the project's active build is used."
+                "description": "%zephyr-ide-cortex.attach.properties.build.description%"
               },
               "ask": {
                 "type": "string",
@@ -1662,33 +1662,33 @@
                   "askBuild"
                 ],
                 "enumDescriptions": [
-                  "Use the active project and active build silently (default).",
-                  "Prompt for both project and build at every launch.",
-                  "Prompt for project at launch; use that project's active build.",
-                  "Use the active project; prompt for which build to debug."
+                  "%zephyr-ide-cortex.attach.properties.ask.enumDescriptions.0%",
+                  "%zephyr-ide-cortex.attach.properties.ask.enumDescriptions.1%",
+                  "%zephyr-ide-cortex.attach.properties.ask.enumDescriptions.2%",
+                  "%zephyr-ide-cortex.attach.properties.ask.enumDescriptions.3%"
                 ],
                 "default": "auto",
-                "description": "Controls whether Zephyr IDE asks the user to pick a project and/or build at session start. Ignored when `project` or `build` are explicitly set."
+                "description": "%zephyr-ide-cortex.attach.properties.ask.description%"
               },
               "svdFile": {
                 "type": "string",
-                "description": "Optional path to an SVD file for the cortex-debug peripheral viewer. When omitted, Zephyr IDE searches the board directory for a .svd file."
+                "description": "%zephyr-ide-cortex.attach.properties.svdFile.description%"
               },
               "executable": {
                 "type": "string",
-                "description": "Override the ELF file. When omitted, Zephyr IDE uses elf_file from runners.yaml."
+                "description": "%zephyr-ide-cortex.attach.properties.executable.description%"
               },
               "gdbPath": {
                 "type": "string",
-                "description": "Override the GDB executable. When omitted, Zephyr IDE uses the gdb path from runners.yaml."
+                "description": "%zephyr-ide-cortex.attach.properties.gdbPath.description%"
               },
               "cwd": {
                 "type": "string",
-                "description": "Working directory for the debug session. Defaults to the workspace folder."
+                "description": "%zephyr-ide-cortex.attach.properties.cwd.description%"
               },
               "BMPGDBSerialPort": {
                 "type": "string",
-                "description": "Black Magic Probe GDB serial port. See `launch.BMPGDBSerialPort`."
+                "description": "%zephyr-ide-cortex.attach.properties.BMPGDBSerialPort.description%"
               },
               "interface": {
                 "type": "string",
@@ -1697,110 +1697,110 @@
                   "jtag",
                   "cjtag"
                 ],
-                "description": "Debug transport. Forwarded to cortex-debug."
+                "description": "%zephyr-ide-cortex.attach.properties.interface.description%"
               },
               "device": {
                 "type": "string",
-                "description": "Target device identifier. Forwarded to cortex-debug."
+                "description": "%zephyr-ide-cortex.attach.properties.device.description%"
               },
               "configFiles": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "OpenOCD .cfg files. See `launch.configFiles`."
+                "description": "%zephyr-ide-cortex.attach.properties.configFiles.description%"
               },
               "searchDir": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "OpenOCD search directories. See `launch.searchDir`."
+                "description": "%zephyr-ide-cortex.attach.properties.searchDir.description%"
               },
               "serverpath": {
                 "type": "string",
-                "description": "Path to the GDB server executable."
+                "description": "%zephyr-ide-cortex.attach.properties.serverpath.description%"
               },
               "serverArgs": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Extra arguments appended to the GDB server's command line."
+                "description": "%zephyr-ide-cortex.attach.properties.serverArgs.description%"
               },
               "gdbTarget": {
                 "type": "string",
-                "description": "host:port for servertype \"external\". See `launch.gdbTarget`."
+                "description": "%zephyr-ide-cortex.attach.properties.gdbTarget.description%"
               },
               "targetId": {
                 "type": "string",
-                "description": "pyocd target. See `launch.targetId`."
+                "description": "%zephyr-ide-cortex.attach.properties.targetId.description%"
               },
               "speed": {
                 "type": "number",
-                "description": "J-Link speed (kHz)."
+                "description": "%zephyr-ide-cortex.attach.properties.speed.description%"
               },
               "ipAddress": {
                 "type": "string",
-                "description": "Remote server IP."
+                "description": "%zephyr-ide-cortex.attach.properties.ipAddress.description%"
               },
               "port": {
                 "type": "number",
-                "description": "GDB server port."
+                "description": "%zephyr-ide-cortex.attach.properties.port.description%"
               },
               "rttConfig": {
                 "type": "object",
-                "description": "RTT decoder configuration."
+                "description": "%zephyr-ide-cortex.attach.properties.rttConfig.description%"
               },
               "swoConfig": {
                 "type": "object",
-                "description": "SWO/SWV configuration."
+                "description": "%zephyr-ide-cortex.attach.properties.swoConfig.description%"
               },
               "preAttachCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "GDB commands executed before attaching."
+                "description": "%zephyr-ide-cortex.attach.properties.preAttachCommands.description%"
               },
               "postAttachCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "GDB commands executed after attaching."
+                "description": "%zephyr-ide-cortex.attach.properties.postAttachCommands.description%"
               },
               "preResetCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "GDB commands executed before reset/restart."
+                "description": "%zephyr-ide-cortex.attach.properties.preResetCommands.description%"
               },
               "postResetCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "GDB commands executed after reset/restart."
+                "description": "%zephyr-ide-cortex.attach.properties.postResetCommands.description%"
               },
               "overrideAttachCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "If set, REPLACES the standard cortex-debug attach sequence."
+                "description": "%zephyr-ide-cortex.attach.properties.overrideAttachCommands.description%"
               },
               "overrideResetCommands": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "If set, REPLACES the standard cortex-debug reset sequence."
+                "description": "%zephyr-ide-cortex.attach.properties.overrideResetCommands.description%"
               },
               "liveWatch": {
                 "type": "object",
-                "description": "Live-watch configuration."
+                "description": "%zephyr-ide-cortex.attach.properties.liveWatch.description%"
               },
               "showDevDebugOutput": {
                 "type": "string",
@@ -1811,15 +1811,15 @@
                   "both",
                   "vscode"
                 ],
-                "description": "cortex-debug developer log verbosity."
+                "description": "%zephyr-ide-cortex.attach.properties.showDevDebugOutput.description%"
               },
               "objdumpPath": {
                 "type": "string",
-                "description": "Path to objdump."
+                "description": "%zephyr-ide-cortex.attach.properties.objdumpPath.description%"
               },
               "nmPath": {
                 "type": "string",
-                "description": "Path to nm."
+                "description": "%zephyr-ide-cortex.attach.properties.nmPath.description%"
               }
             }
           }
@@ -1838,8 +1838,8 @@
         ],
         "configurationSnippets": [
           {
-            "label": "Zephyr IDE Cortex: Debug",
-            "description": "Debug the active build using runners.yaml (no runner-specific config required).",
+            "label": "%zephyr-ide-cortex.snippet.0.label%",
+            "description": "%zephyr-ide-cortex.snippet.0.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Debug",
               "type": "zephyr-ide-cortex",
@@ -1847,8 +1847,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Attach",
-            "description": "Attach to the active build using runners.yaml.",
+            "label": "%zephyr-ide-cortex.snippet.1.label%",
+            "description": "%zephyr-ide-cortex.snippet.1.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Attach",
               "type": "zephyr-ide-cortex",
@@ -1856,8 +1856,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Debug (ask build at launch)",
-            "description": "Debug the active project but prompt the user to select a build configuration each time F5 is pressed. Change ask to \"askBoth\" to prompt for project as well.",
+            "label": "%zephyr-ide-cortex.snippet.2.label%",
+            "description": "%zephyr-ide-cortex.snippet.2.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Debug (ask build at launch)",
               "type": "zephyr-ide-cortex",
@@ -1866,8 +1866,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Debug (J-Link)",
-            "description": "Debug using J-Link. Zephyr IDE reads --device, --speed, and --iface from runners.yaml and translates them to cortex-debug fields automatically.",
+            "label": "%zephyr-ide-cortex.snippet.3.label%",
+            "description": "%zephyr-ide-cortex.snippet.3.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Debug (J-Link)",
               "type": "zephyr-ide-cortex",
@@ -1876,8 +1876,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Debug (pyOCD)",
-            "description": "Debug using pyOCD. Zephyr IDE reads --target and --probe from runners.yaml and translates them to cortex-debug fields. Uses the workspace venv pyocd when available.",
+            "label": "%zephyr-ide-cortex.snippet.4.label%",
+            "description": "%zephyr-ide-cortex.snippet.4.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Debug (pyOCD)",
               "type": "zephyr-ide-cortex",
@@ -1886,8 +1886,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Debug (pyOCD with ST-Link probe)",
-            "description": "Debug using pyOCD with an ST-Link probe explicitly selected. pyOCD matches --probe as a substring against the probe description, so \"stlink\" selects any connected ST-Link. Other runners.yaml args (--target, etc.) are still applied automatically.",
+            "label": "%zephyr-ide-cortex.snippet.5.label%",
+            "description": "%zephyr-ide-cortex.snippet.5.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Debug (pyOCD with ST-Link probe)",
               "type": "zephyr-ide-cortex",
@@ -1900,8 +1900,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Debug (ST-Link)",
-            "description": "Debug using ST-Link. Zephyr IDE reads --device from runners.yaml and passes it to cortex-debug servertype \"stlink\".",
+            "label": "%zephyr-ide-cortex.snippet.6.label%",
+            "description": "%zephyr-ide-cortex.snippet.6.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Debug (ST-Link)",
               "type": "zephyr-ide-cortex",
@@ -1910,8 +1910,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Debug (Black Magic Probe)",
-            "description": "Debug using Black Magic Probe. Zephyr IDE reads --gdb-serial from runners.yaml and translates it to BMPGDBSerialPort. Add a BMPGDBSerialPort field here to override. Install mylonics.bmp-debug for Zephyr RTOS thread awareness — it auto-discovers the probe so BMPGDBSerialPort is not required.",
+            "label": "%zephyr-ide-cortex.snippet.7.label%",
+            "description": "%zephyr-ide-cortex.snippet.7.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Debug (Black Magic Probe)",
               "type": "zephyr-ide-cortex",
@@ -1920,8 +1920,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Attach (Black Magic Probe)",
-            "description": "Attach to a running target via Black Magic Probe. Zephyr IDE reads --gdb-serial from runners.yaml. Add a BMPGDBSerialPort field here to override if runners.yaml does not include --gdb-serial.",
+            "label": "%zephyr-ide-cortex.snippet.8.label%",
+            "description": "%zephyr-ide-cortex.snippet.8.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Attach (Black Magic Probe)",
               "type": "zephyr-ide-cortex",
@@ -1930,8 +1930,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Debug Sysbuild Image",
-            "description": "Debug a sysbuild domain. Identical to \"Zephyr IDE Cortex: Debug\" — the active sysbuild image (selected in the Project Build panel) determines which domain's runners.yaml is used. No per-domain field is written into launch.json; switch the active image to switch domains.",
+            "label": "%zephyr-ide-cortex.snippet.9.label%",
+            "description": "%zephyr-ide-cortex.snippet.9.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Debug Sysbuild Image",
               "type": "zephyr-ide-cortex",
@@ -1939,8 +1939,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Debug (openocd with explicit probe)",
-            "description": "Override runners.yaml's interface config to use a specific probe (e.g. switch from the board-default J-Link to an ST-Link). Supplying an interface/ cfg file automatically filters out the interface/ entry from runners.yaml so the two do not conflict.",
+            "label": "%zephyr-ide-cortex.snippet.10.label%",
+            "description": "%zephyr-ide-cortex.snippet.10.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Debug (openocd with explicit probe)",
               "type": "zephyr-ide-cortex",
@@ -1952,8 +1952,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex: Debug (fully manual)",
-            "description": "Manually specify all debug server settings while letting Zephyr IDE auto-fill the ELF, GDB path, and project context from runners.yaml. Use when the auto-translation does not produce the cortex-debug config you need. `servertype` overrides the runner-derived value; `configFiles`/`searchDir`/`rttConfig` override any runners.yaml args.",
+            "label": "%zephyr-ide-cortex.snippet.11.label%",
+            "description": "%zephyr-ide-cortex.snippet.11.description%",
             "body": {
               "name": "Zephyr IDE Cortex: Debug (fully manual)",
               "type": "zephyr-ide-cortex",
@@ -1981,8 +1981,8 @@
             }
           },
           {
-            "label": "Zephyr IDE Cortex (Legacy): Manual debug configuration",
-            "description": "Advanced: write a cortex-debug configuration directly using Zephyr IDE helper commands. Prefer the `zephyr-ide` type above — it reads runners.yaml automatically. Use this only when you need features not exposed by the zephyr-ide provider.",
+            "label": "%zephyr-ide-cortex.snippet.12.label%",
+            "description": "%zephyr-ide-cortex.snippet.12.description%",
             "body": {
               "name": "Cortex Debug (Legacy): Manual debug configuration",
               "cwd": "^\"\\${workspaceFolder}\"",
