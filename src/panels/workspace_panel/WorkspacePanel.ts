@@ -17,7 +17,7 @@ limitations under the License.
 
 import { tracksRemoteRevision } from "../../utilities/west-revision";
 import { findRepositories } from "../../setup_utilities/github-repositories";
-import { checkWestRemote, editWestProject, projectScope, readWestCatalog, savedProjects, saveProjects } from "../../setup_utilities/west-projects";
+import { checkWestRemote, editWestProject, projectScope, projectSelection, readWestCatalog, savedProjects, saveProjects } from "../../setup_utilities/west-projects";
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
 import * as path from "upath";
@@ -542,8 +542,9 @@ export class WorkspacePanel {
     try {
       const data = await readWestCatalog(this._context, target.setupState);
       if (generation !== this.catalogGeneration) { return; }
+      const { detected, unresolved } = projectSelection(this._context, scope);
       void this._panel.webview.postMessage({ command: "westProjects", ...data, scope, added, editError,
-        selected: savedProjects(this._context, scope) });
+        detected, unresolved, selected: savedProjects(this._context, scope) });
     } catch (error) {
       if (generation !== this.catalogGeneration) { return; }
       void this._panel.webview.postMessage({ command: "westProjects", scope, projects: [], selected: [], error: String(error) });

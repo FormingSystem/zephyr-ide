@@ -11,11 +11,13 @@ import { moduleMatcher, moduleSearchBox } from "../../webview_shared/module-sear
 import type { GitHubRepository } from "../../../setup_utilities/github-repositories";
 import { changeSelection, westSelectionPane, westSelectionToolbar, type SelectionAction } from "../../webview_shared/west-selection";
 import { panelText } from "../../webview_shared/panel-text";
-import type { WestCatalog, WestProject } from "../../../setup_utilities/west-projects";
+import type { DependencyReference, DetectedDependency, WestCatalog, WestProject } from "../../../setup_utilities/west-projects";
 
 export interface WestPickerData extends WestCatalog {
   scope: string;
   selected: string[];
+  detected?: DetectedDependency[];
+  unresolved?: DependencyReference[];
   error?: string;
   editError?: string;
   added?: string[];
@@ -115,6 +117,14 @@ export class WestProjectPicker extends ZephyrLitElement {
     return checkout.head === remote.sha ? panelText("Matches remote") : panelText("Differs from remote");
   }
 
+  private dependencyReason(name: string) {
+    const dependency = this.catalog?.detected?.find(item => item.name === name);
+    if (dependency) {
+      return html`<small title=${dependency.sources.join("\n")}>${panelText("Required by {0}", dependency.requiredBy.join(", "))}</small>`;
+    }
+    return this.selected.has(name) ? html`<small>${panelText("Manually selected")}</small>` : nothing;
+  }
+
   private group(rows: WestProject[], label: string, pinned = false) {
     return html`<section class="wp-group" aria-label=${label}>
       ${pinned ? nothing : html`<h5>${label} <small>${rows.length}</small></h5>`}
@@ -123,7 +133,7 @@ export class WestProjectPicker extends ZephyrLitElement {
         <label title=${[project.url, project.revision].join("\n")}>
           <input type="checkbox" .checked=${live(this.selected.has(project.name))} ?disabled=${this.inactive}
             @change=${() => this.setSelection([project], "invert")}>
-          <span><strong>${project.name}</strong><small>${project.path}${pinned ? " · " + this.origin(project) : ""}</small></span>
+          <span><strong>${project.name}</strong><small>${project.path}${pinned ? " · " + this.origin(project) : ""}</small>${this.dependencyReason(project.name)}</span>
         </label>
         <span class="wp-checkout" title=${[project.checkout.head, project.remote?.sha].filter(Boolean).join(" → ")}>
           ${this.checkoutStatus(project)}${project.remote && project.checkout.state === "cloned" ? html`<small>${panelText("Checked {0}", new Date(project.remote.checkedAt).toLocaleString())}</small>` : nothing}
@@ -189,6 +199,7 @@ export class WestProjectPicker extends ZephyrLitElement {
     const sources = [panelText("Workspace manifest"), panelText("Official GitHub repositories"), panelText("Custom Git repositories")];
     const locked = this.inactive || !rows.length;
     return html`
+      ${data.unresolved?.map(ref => html`<p role="status" title=${ref.sources.join("\n")}><strong>${ref.name}</strong> · ${panelText("Required by {0}", ref.requiredBy.join(", "))} · ${panelText("No revision in the west manifest")}</p>`)}
       ${data.partial ? html`<p role="status">${panelText("Update the manifest provider and refresh to see its modules.")}</p>` : nothing}
       <div class="wp-tools">
         ${westSelectionToolbar(locked, action => this.setSelection(rows, action))}
