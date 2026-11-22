@@ -106,15 +106,25 @@ export class WestProjectPicker extends ZephyrLitElement {
   }
 
   private checkoutStatus(project: WestProject) {
+    const status = (tone: string, icon: string, text: string) => html`
+      <span class="wp-status" data-tone=${tone}>
+        <span class="codicon codicon-${icon}" aria-hidden="true"></span>${text}
+      </span>`;
     const { checkout, revision, remote } = project;
-    if (checkout.state === "absent") { return panelText("Not downloaded"); }
-    if (checkout.state === "invalid") { return panelText("Checkout unavailable"); }
+    if (checkout.state === "absent") { return status("muted", "cloud-download", panelText("Not downloaded")); }
+    if (checkout.state === "invalid") { return status("error", "error", panelText("Checkout unavailable")); }
     if (isPinnedRevision(revision)) {
-      return checkout.head === revision.toLowerCase() ? panelText("At manifest revision") : panelText("Differs from manifest");
+      return checkout.head === revision.toLowerCase()
+        ? status("success", "check", panelText("At manifest revision"))
+        : status("warning", "warning", panelText("Differs from manifest"));
     }
-    if (!remote) { return panelText("Downloaded · remote unchecked"); }
-    if (remote.error) { return remote.error === "refMissing" ? panelText("Downloaded · remote ref missing") : panelText("Downloaded · check failed"); }
-    return checkout.head === remote.sha ? panelText("Matches remote") : panelText("Differs from remote");
+    if (!remote) { return status("downloaded", "clock", panelText("Downloaded · remote unchecked")); }
+    if (remote.error) {
+      return status("error", "error", remote.error === "refMissing" ? panelText("Downloaded · remote ref missing") : panelText("Downloaded · check failed"));
+    }
+    return checkout.head === remote.sha
+      ? status("success", "check", panelText("Matches remote"))
+      : status("info", "git-compare", panelText("Differs from remote"));
   }
 
   private dependencyReason(name: string) {
