@@ -571,7 +571,9 @@ export class WorkspacePanel {
     if (message.command === "selectWestProjects") {
       await saveProjects(this._context, scope, message.names);
     } else {
-      await vscode.commands.executeCommand("zephyr-ide.west-update", { scope, names: message.names, all: message.all === true });
+      await vscode.commands.executeCommand("zephyr-ide.west-update", {
+        scope, names: message.names, all: message.all === true, preserveSelection: message.preserveSelection === true,
+      });
       await this.refreshModuleStatus(scope, true);
     }
   }

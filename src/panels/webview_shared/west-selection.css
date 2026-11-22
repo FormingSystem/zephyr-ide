@@ -79,11 +79,16 @@
     border: 1px solid var(--vscode-contrastBorder, var(--vscode-panel-border));
     border-radius: 4px;
 }
-.west-pane h4 {
-    margin: 0;
+.west-pane-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
     padding: 8px 10px;
     background: var(--vscode-sideBarSectionHeader-background);
 }
+.west-pane-header h4 { margin: 0; }
 .west-pane small, .west-pane .wp-empty { color: var(--vscode-descriptionForeground); }
 .west-pane .wp-empty { margin: 8px 12px; }
 .west-pane-list {
