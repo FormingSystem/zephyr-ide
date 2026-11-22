@@ -169,6 +169,7 @@ west-project-picker input:not([type="checkbox"]) {
 }
 west-project-picker input[type="search"] { flex: 1 1 220px; }
 west-project-picker h5 { margin: 0; padding: 6px 10px; font-size: inherit; }
+west-project-picker .wp-group + .wp-group { border-block-start: 1px solid var(--west-section-border); }
 west-project-picker .wp-row { display: flex; align-items: center; gap: 8px; padding: 5px 10px; }
 west-project-picker .wp-row:hover { background: var(--vscode-list-hoverBackground); color: var(--vscode-list-hoverForeground, inherit); }
 west-project-picker .wp-row label {
