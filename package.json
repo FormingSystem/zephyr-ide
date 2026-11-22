@@ -206,6 +206,11 @@
           "default": "kconfig-dashboard",
           "description": "%settings.zephyr-ide.projectViewKconfigButton.description%"
         },
+        "zephyr-ide.autoFetchProjectModules": {
+          "type": "boolean",
+          "default": true,
+          "description": "%settings.zephyr-ide.autoFetchProjectModules.description%"
+        },
         "zephyr-ide.westNarrowUpdate": {
           "type": [
             "boolean"
@@ -766,6 +771,10 @@
       {
         "command": "zephyr-ide.west-init",
         "title": "%zephyr-ide.west-init.title%"
+      },
+      {
+        "command": "zephyr-ide.sync-project-modules",
+        "title": "%zephyr-ide.sync-project-modules.title%"
       },
       {
         "command": "zephyr-ide.select-west-modules",

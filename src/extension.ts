@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { syncProjectDependencies } from "./setup_utilities/project-dependencies";
 import * as vscode from "vscode";
 import * as path from "upath";
 import * as fs from "fs";
@@ -1244,6 +1245,7 @@ export async function activate(context: vscode.ExtensionContext) {
     panel.showWestModules();
   };
   context.subscriptions.push(
+    vscode.commands.registerCommand("zephyr-ide.sync-project-modules", () => syncProjectDependencies(context, wsConfig, true)),
     vscode.commands.registerCommand("zephyr-ide.select-west-modules", openWestModules),
     vscode.commands.registerCommand("zephyr-ide.update-selected-west-modules", async () => {
       const state = wsConfig.activeSetupState;

@@ -1,9 +1,11 @@
 {
+  "Detected {0} required west modules. See the module list for target revisions.": "已识别 {0} 个 west 依赖模块，可在模块列表查看目标版本。",
   "No revision in the west manifest": "当前 west 清单未声明版本",
   "Required by {0}": "依赖方：{0}",
   "Manually selected": "手动勾选",
   "Manifest revision": "清单目标版本",
   "Not pinned to a commit": "未锁定提交",
+  "Required modules outside the active west manifest have no manifest revision: {0}": "以下依赖未列入当前 west 清单，未指定可更新的版本：{0}",
   "Not downloaded": "未下载",
   "Checkout unavailable": "本地仓库异常",
   "At manifest revision": "已下载 · 与清单一致",
@@ -16,6 +18,14 @@
   "Checked {0}": "检查于 {0}",
   "Checking updates…": "正在检查更新…",
   "Check for updates": "检查更新",
+  "Select a project in an initialized west workspace.": "请在已初始化的 west 工作区中选择工程。",
+  "Detected {0} west modules in the manifest. All are available locally.": "识别到清单内的 {0} 个 west 模块，均已下载。",
+  "The checkout is still missing after west update.": "west 更新后仍未找到模块仓库。",
+  "Downloading west dependencies for {0}: {1}": "正在为工程 {0} 下载 west 依赖：{1}",
+  "Find official repositories": "查找官方仓库",
+  "Dependencies missing from the manifest: {0}": "当前 west 清单缺少以下依赖：{0}",
+  "Add official repositories to the west manifest and download": "将所选官方仓库加入 west 清单并下载",
+  "Could not synchronize project modules: {0}": "无法同步工程依赖模块：{0}",
   "$(check) Mark workspace as already set up": "$(check) 将工作区标记为已配置",
   "$(check) already in sampleProjects": "$(check) 已在 sampleProjects 中",
   "$(check) installed": "$(check) 已安装",
@@ -1430,5 +1440,9 @@
   "No available modules": "没有可选模块",
   "{0} matched": "匹配 {0} 项",
   "Fetched modules": "已获取的模块",
-  "Update selected west modules": "更新已勾选的 west 模块"
+  "Update selected west modules": "更新已勾选的 west 模块",
+  "Invalid GitHub owner": "GitHub 用户名或组织名无效。",
+  "Additional project no longer exists.": "额外添加的模块已不存在。",
+  "Could not safely edit this manifest. Open it in the editor.": "无法安全修改此清单，请在编辑器中打开。",
+  "Only additional projects in this manifest can be removed.": "此清单只允许移除额外添加的模块。"
 }
