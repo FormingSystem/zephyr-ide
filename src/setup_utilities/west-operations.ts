@@ -232,7 +232,17 @@ export async function westInit(context: vscode.ExtensionContext, wsConfig: Works
   return westInitRes;
 }
 
-const updatingWorkspaces = new Set<string>();
+const updatingWorkspaces = new Map<string, Promise<unknown>>();
+
+export async function withWestUpdate<T>(root: string, work: () => Promise<T>): Promise<T> {
+  root = path.resolve(root);
+  while (updatingWorkspaces.has(root)) {
+    await updatingWorkspaces.get(root)?.catch(() => undefined);
+  }
+  const task = Promise.resolve().then(work);
+  updatingWorkspaces.set(root, task);
+  try { return await task; } finally { updatingWorkspaces.delete(root); }
+}
 
 export async function westUpdate(context: vscode.ExtensionContext, wsConfig: WorkspaceConfig, globalConfig: GlobalConfig, solo = true, request?: WestSelection) {
   const setupState = await getSetupStateOrNotify(context, wsConfig, "West Update");
@@ -245,12 +255,24 @@ export async function westUpdate(context: vscode.ExtensionContext, wsConfig: Wor
     void vscode.window.showInformationMessage(vscode.l10n.t("A west update is already in progress."));
     return;
   }
-  updatingWorkspaces.add(root);
-  try {
-    return await updateWorkspaceProjects(context, wsConfig, globalConfig, setupState, solo, request);
-  } finally {
-    updatingWorkspaces.delete(root);
+  return withWestUpdate(root, () => updateWorkspaceProjects(context, wsConfig, globalConfig, setupState, solo, request));
+}
+
+export async function runWestUpdateTask(context: vscode.ExtensionContext, setupState: SetupState, names: string[], all = false) {
+  // Read config option from settings.json, but allow test override
+  const configuration = vscode.workspace.getConfiguration('zephyr-ide');
+  let useNarrowUpdate = configuration.get<boolean>('westNarrowUpdate', false);
+  if (forceNarrowUpdateForTest) {
+    useNarrowUpdate = true;
   }
+  const useKeepDescendants = configuration.get<boolean>('westKeepDescendants', false);
+  const flags: string[] = [];
+  if (useNarrowUpdate) { flags.push('--narrow'); }
+  if (useKeepDescendants) { flags.push('--keep-descendants'); }
+  const [python, helper] = projectHelper(context, setupState);
+  const cmd = all ? [python, '-m', 'west', 'update', ...flags]
+    : [python, helper, 'update', ...flags, '--', ...names];
+  return await executeTaskHelperInPythonEnv(setupState, "Zephyr IDE: West Update", cmd, setupState.setupPath, true);
 }
 
 async function updateWorkspaceProjects(context: vscode.ExtensionContext, wsConfig: WorkspaceConfig, globalConfig: GlobalConfig,
@@ -269,23 +291,10 @@ async function updateWorkspaceProjects(context: vscode.ExtensionContext, wsConfi
   setupState.zephyrVersion = undefined;
   await saveSetupState(context, wsConfig, globalConfig);
 
-  // Read config option from settings.json, but allow test override
-  const configuration = vscode.workspace.getConfiguration('zephyr-ide');
-  let useNarrowUpdate = configuration.get<boolean>('westNarrowUpdate', false);
-  if (forceNarrowUpdateForTest) {
-    useNarrowUpdate = true;
-  }
-  const useKeepDescendants = configuration.get<boolean>('westKeepDescendants', false);
-  const flags: string[] = [];
-  if (useNarrowUpdate) { flags.push('--narrow'); }
-  if (useKeepDescendants) { flags.push('--keep-descendants'); }
-  const [python, helper] = projectHelper(context, setupState);
-  const cmd = selection.all ? [python, '-m', 'west', 'update', ...flags]
-    : [python, helper, 'update', ...flags, '--', ...selection.names];
-  const westUpdateRes = await executeTaskHelperInPythonEnv(setupState, "Zephyr IDE: West Update", cmd, setupState.setupPath, true);
+  const westUpdateRes = await runWestUpdateTask(context, setupState, selection.names, selection.all);
 
   if (!westUpdateRes) {
-    notifyError("West Update", vscode.l10n.t("West Update Failed. Check the Zephyr IDE output for details."), { command: cmd.join(" ") });
+    notifyError("West Update", vscode.l10n.t("West Update Failed. Check the Zephyr IDE output for details."));
   } else {
     setupState.westUpdated = true;
     const zephyrScanResult = await scanAndSetZephyrDirAndVersion(setupState, "West Update");
@@ -302,7 +311,7 @@ async function updateWorkspaceProjects(context: vscode.ExtensionContext, wsConfi
     // that ZEPHYR_BASE/venv are (re)established (issue #631, Option B).
     void discoverRunnersAsync(setupState);
 
-    const useZephyrExport = configuration.get<boolean>('westZephyrExport', false);
+    const useZephyrExport = vscode.workspace.getConfiguration('zephyr-ide').get<boolean>('westZephyrExport', false);
     if (useZephyrExport) {
       outputInfo("West Update", "Running 'west zephyr-export'...");
       const exportRes = await executeTaskHelperInPythonEnv(setupState, "Zephyr IDE: West Zephyr Export", "west zephyr-export", setupState.setupPath, true);
