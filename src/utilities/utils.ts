@@ -26,6 +26,7 @@ import * as os from "os";
 import * as yaml from 'js-yaml';
 
 import { SetupState, WorkspaceConfig } from "../setup_utilities/types";
+import { toolEnvironment } from "../setup_utilities/tool-environment";
 import { getToolchainDir, resolveToolchainDirPath } from "../setup_utilities/workspace-config";
 import { initOutputChannel, getOutputChannel, outputCommand, outputError, outputInfo, outputLine, outputWarning, type ShellCommandResult } from "./output";
 import {
@@ -903,7 +904,7 @@ export async function executeTaskHelper(taskName: string, cmd: string | string[]
     // Coerce empty strings to undefined — VS Code's ShellExecution rejects
     // an empty-string cwd and emits "An unknown error occurred".
     cwd: cwd || undefined,
-    ...(env && { env }),
+    env: toolEnvironment(env) as Record<string, string>,
   };
 
   const exec = Array.isArray(cmd)
@@ -943,7 +944,7 @@ export async function executeShellCommandInPythonEnv(cmd: string, cwd: string, s
 
 export async function executeShellCommand(cmd: string, cwd: string, display_error = true, env?: NodeJS.ProcessEnv, timeoutMs?: number): Promise<ShellCommandResult> {
   const exec = util.promisify(cp.exec);
-  const effectiveEnv = env ?? process.env;
+  const effectiveEnv = toolEnvironment(env ?? process.env);
   const execOptions: cp.ExecOptions = {
     cwd: cwd,
     encoding: 'utf8',  // Ensure stdout and stderr are strings, not Buffers
@@ -958,9 +959,7 @@ export async function executeShellCommand(cmd: string, cwd: string, display_erro
   }
 
   // Use provided environment or default to process.env
-  if (env) {
-    execOptions.env = env;
-  }
+  execOptions.env = effectiveEnv;
 
   // On Windows, use PowerShell instead of the default cmd.exe. cmd.exe has
   // subtle quoting and environment-propagation issues that break Python-based

@@ -1,4 +1,5 @@
 {
+  "settings.zephyr-ide.toolEnvironment.description": "Standard environment variables used by extension tools on this machine. Configure them from Tool environment.",
   "zephyr-ide.sync-project-modules.title": "Zephyr IDE: Detect and Download Project Modules",
   "settings.zephyr-ide.autoFetchProjectModules.description": "Automatically download missing west modules detected when selecting a project or build configuration.",
   "extension.description": "Streamline Zephyr RTOS development in VS Code — automated SDK installation, west workspace management, project building, flashing, and debugging for ARM, RISC-V, and more",

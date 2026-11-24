@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { toolEnvironment } from "./tool-environment";
 import * as vscode from "vscode";
 import * as fs from "fs";
 import { repositoryAddresses } from "../utilities/repository-addresses";
@@ -101,7 +102,7 @@ function invoke<T>(context: vscode.ExtensionContext, state: SetupState, action: 
   return new Promise((resolve, reject) => {
     const child = execFile(python, [helper, action], {
       cwd: state.setupPath, windowsHide: true, timeout: 30000, maxBuffer: 16 * 1024 * 1024,
-      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+      env: { ...toolEnvironment(), PYTHONIOENCODING: "utf-8" },
     }, (error, stdout, stderr) => {
       if (error) { reject(new Error(vscode.l10n.t(stderr.trim() || error.message))); return; }
       try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); }

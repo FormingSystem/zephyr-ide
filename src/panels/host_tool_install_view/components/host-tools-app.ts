@@ -140,6 +140,7 @@ export class HostToolsApp extends ZephyrLitElement {
           <span class="breadcrumb-current">${panelText("Host Tools")}</span>
         </div>
         <div class="page-header">
+          <vscode-button appearance="secondary" @click=${() => this.postCommand("toolEnvironment")}>${panelText("Local tool environment")}</vscode-button>
           <div>
             <h1 class="page-title">${panelText("Host Tools Installation")}</h1>
             <p class="page-subtitle">${panelText("Install and maintain local system dependencies for Zephyr development.")}</p>

@@ -1,4 +1,5 @@
 {
+  "settings.zephyr-ide.toolEnvironment.description": "本机扩展工具使用的标准环境变量，可在工具环境中逐项配置。",
   "zephyr-ide.sync-project-modules.title": "Zephyr IDE: 识别并下载工程依赖模块",
   "settings.zephyr-ide.autoFetchProjectModules.description": "选择工程或构建配置时，自动下载识别出的缺失 west 模块。",
   "extension.description": "在 VS Code 中开发 Zephyr RTOS 应用。支持 SDK 安装、west 工作区管理，以及 ARM、RISC-V 等平台的构建、烧录和调试。",

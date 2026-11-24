@@ -206,6 +206,13 @@
           "default": "kconfig-dashboard",
           "description": "%settings.zephyr-ide.projectViewKconfigButton.description%"
         },
+        "zephyr-ide.toolEnvironment": {
+          "type": "object",
+          "scope": "machine",
+          "default": {},
+          "additionalProperties": { "type": "string" },
+          "description": "%settings.zephyr-ide.toolEnvironment.description%"
+        },
         "zephyr-ide.autoFetchProjectModules": {
           "type": "boolean",
           "default": true,

@@ -1449,5 +1449,8 @@
   "Invalid GitHub owner": "GitHub 用户名或组织名无效。",
   "Additional project no longer exists.": "额外添加的模块已不存在。",
   "Could not safely edit this manifest. Open it in the editor.": "无法安全修改此清单，请在编辑器中打开。",
-  "Only additional projects in this manifest can be removed.": "此清单只允许移除额外添加的模块。"
+  "Only additional projects in this manifest can be removed.": "此清单只允许移除额外添加的模块。",
+  "Local tool environment": "本机工具环境",
+  "Set this variable for extension commands. Clear it to inherit the environment.": "为扩展执行的命令设置此变量。清空后继承系统环境。",
+  "Zephyr IDE": "Zephyr IDE"
 }

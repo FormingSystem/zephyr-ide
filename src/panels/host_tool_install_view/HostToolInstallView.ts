@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { chooseToolEnvironment } from "../../setup_utilities/tool-environment";
 import { ConfigurationPage } from "../configuration-page";
 import { configurationNavigation } from "../configuration-navigation";
 import { webviewMessages } from "../webview-messages";
@@ -116,6 +117,10 @@ export class HostToolInstallView {
 
   private async handleWebviewMessage(message: Record<string, any>) {
     switch (message.command) {
+      case "toolEnvironment":
+        await chooseToolEnvironment();
+        await this._service.checkStatus();
+        break;
       case "hostToolsCheckStatus":
         await this._service.checkStatus();
         break;
