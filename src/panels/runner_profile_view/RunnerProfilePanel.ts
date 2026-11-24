@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { ConfigurationPage } from "../configuration-page";
+import { configurationNavigation } from "../configuration-navigation";
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
 
@@ -52,7 +54,7 @@ import { setWorkspaceState } from "../../setup_utilities/state-management";
 export class RunnerProfilePanel {
   public static currentPanel: RunnerProfilePanel | undefined;
 
-  private readonly _panel: vscode.WebviewPanel;
+  private readonly _panel: ConfigurationPage;
   private readonly _extensionPath: string;
   private readonly _context: vscode.ExtensionContext;
   private _disposables: vscode.Disposable[] = [];
@@ -75,26 +77,13 @@ export class RunnerProfilePanel {
     wsConfig: WorkspaceConfig,
     globalConfig: GlobalConfig,
   ) {
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
-
     if (RunnerProfilePanel.currentPanel) {
-      RunnerProfilePanel.currentPanel._panel.reveal(column);
+      RunnerProfilePanel.currentPanel._panel.show();
       RunnerProfilePanel.currentPanel.updateContent(wsConfig, globalConfig);
       return RunnerProfilePanel.currentPanel;
     }
 
-    const panel = vscode.window.createWebviewPanel(
-      "zephyrIDERunnerProfiles",
-      vscode.l10n.t("Zephyr IDE: Runner Profiles"),
-      column || vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(extensionPath)],
-      },
-    );
+    const panel = ConfigurationPage.open(extensionPath);
 
     RunnerProfilePanel.currentPanel = new RunnerProfilePanel(
       panel,
@@ -107,7 +96,7 @@ export class RunnerProfilePanel {
   }
 
   private constructor(
-    panel: vscode.WebviewPanel,
+    panel: ConfigurationPage,
     extensionPath: string,
     context: vscode.ExtensionContext,
     wsConfig: WorkspaceConfig,
@@ -123,7 +112,7 @@ export class RunnerProfilePanel {
     // early `ready` message from the webview is not lost (see "webview init"
     // convention used by HostToolInstallView, WorkspacePanel, SetupPanel, SDKPanel).
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-    this._panel.webview.onDidReceiveMessage(
+    this._panel.onDidReceiveMessage(
       (message) => { void this.handleWebviewMessage(message); },
       null,
       this._disposables,
@@ -137,7 +126,7 @@ export class RunnerProfilePanel {
     this._globalConfig = globalConfig;
 
     if (!this._htmlInitialized) {
-      this._panel.webview.html = this.getHtmlForWebview();
+      this._panel.html = this.getHtmlForWebview();
       this._htmlInitialized = true;
     }
     void this.pushState();
@@ -464,7 +453,7 @@ export class RunnerProfilePanel {
 
     const separateBuildDebugProfile = !!vscode.workspace.getConfiguration().get<boolean>("zephyr-ide.separateBuildDebugProfile");
 
-    this._panel.webview.postMessage({
+    this._panel.postMessage({
       command: "updateContent",
       data: {
         userProfiles: user,
@@ -491,13 +480,13 @@ export class RunnerProfilePanel {
 
   private getHtmlForWebview(): string {
     const nonce = generateNonce();
-    const cssUri = this._panel.webview.asWebviewUri(
+    const cssUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "src", "panels", "runner_profile_view", "runner-profile-panel.css"),
     );
-    const codiconUri = this._panel.webview.asWebviewUri(
+    const codiconUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "node_modules", "@vscode", "codicons", "dist", "codicon.css"),
     );
-    const jsUri = this._panel.webview.asWebviewUri(
+    const jsUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "dist", "webview", "runner_profile_view", "runner-profile-panel.js"),
     );
 
@@ -506,12 +495,13 @@ export class RunnerProfilePanel {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource}; font-src ${this._panel.webview.cspSource}; img-src ${this._panel.webview.cspSource} data:; script-src 'nonce-${nonce}';">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.cspSource}; font-src ${this._panel.cspSource}; img-src ${this._panel.cspSource} data:; script-src 'nonce-${nonce}';">
             <title>Zephyr IDE: Runner Profiles</title>
             <link rel="stylesheet" type="text/css" href="${cssUri}">
             <link rel="stylesheet" type="text/css" href="${codiconUri}" id="vscode-codicon-stylesheet">
         </head>
         <body>
+          ${configurationNavigation("runners")}
           ${webviewMessages(nonce)}
             <runner-profile-app></runner-profile-app>
             <script nonce="${nonce}" src="${jsUri}"></script>

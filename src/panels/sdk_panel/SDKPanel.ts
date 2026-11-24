@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { ConfigurationPage } from "../configuration-page";
+import { configurationNavigation } from "../configuration-navigation";
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
 import { WorkspaceConfig, GlobalConfig } from "../../setup_utilities/types";
@@ -34,7 +36,7 @@ import { sdkVersions } from "../../defines";
 
 export class SDKPanel {
   public static currentPanel: SDKPanel | undefined;
-  private readonly _panel: vscode.WebviewPanel;
+  private readonly _panel: ConfigurationPage;
   private readonly _extensionPath: string;
   private readonly _context: vscode.ExtensionContext;
   private _disposables: vscode.Disposable[] = [];
@@ -72,26 +74,13 @@ export class SDKPanel {
     wsConfig: WorkspaceConfig,
     globalConfig: GlobalConfig,
   ) {
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
-
     if (SDKPanel.currentPanel) {
-      SDKPanel.currentPanel._panel.reveal(column);
+      SDKPanel.currentPanel._panel.show();
       SDKPanel.currentPanel.updateContent(wsConfig, globalConfig);
       return SDKPanel.currentPanel;
     }
 
-    const panel = vscode.window.createWebviewPanel(
-      "zephyrIDESDK",
-      vscode.l10n.t("Zephyr IDE: SDK"),
-      column || vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(extensionPath)],
-      },
-    );
+    const panel = ConfigurationPage.open(extensionPath);
 
     SDKPanel.currentPanel = new SDKPanel(
       panel,
@@ -106,7 +95,7 @@ export class SDKPanel {
   private _htmlInitialized = false;
 
   private constructor(
-    panel: vscode.WebviewPanel,
+    panel: ConfigurationPage,
     extensionPath: string,
     context: vscode.ExtensionContext,
     wsConfig: WorkspaceConfig,
@@ -118,7 +107,7 @@ export class SDKPanel {
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    this._panel.webview.onDidReceiveMessage(
+    this._panel.onDidReceiveMessage(
       (message) => { this.handleWebviewMessage(message); },
       null,
       this._disposables,
@@ -127,7 +116,7 @@ export class SDKPanel {
     // Subscribe to SDK install progress events and forward to webview
     this._disposables.push(
       onSDKProgress((event) => {
-        this._panel.webview.postMessage({
+        this._panel.postMessage({
           command: 'sdkInstallProgress',
           data: event,
         });
@@ -145,12 +134,12 @@ export class SDKPanel {
     this.currentGlobalConfig = globalConfig;
 
     if (!this._htmlInitialized) {
-      this._panel.webview.html = this.getHtmlForWebview();
+      this._panel.html = this.getHtmlForWebview();
       this._htmlInitialized = true;
     }
 
     // Send init data to the Lit component
-    this._panel.webview.postMessage({
+    this._panel.postMessage({
       command: "updateContent",
       data: {
         sdkInstalled: globalConfig.sdkInstalled ?? false,
@@ -160,12 +149,12 @@ export class SDKPanel {
 
     // Push cached SDK list immediately if available, otherwise start fetching
     if (this._cachedSDKList) {
-      this._panel.webview.postMessage({
+      this._panel.postMessage({
         command: "sdkListResult",
         data: this._cachedSDKList,
       });
     } else {
-      this._panel.webview.postMessage({ command: "sdkListLoading" });
+      this._panel.postMessage({ command: "sdkListLoading" });
       void this.fetchSDKListInBackground();
     }
   }
@@ -365,7 +354,7 @@ export class SDKPanel {
       const sdkList = await listAvailableSDKs();
       this._cachedSDKList = sdkList;
       await this.syncSdkStateFromList(sdkList);
-      this._panel.webview.postMessage({ command: "sdkListResult", data: sdkList });
+      this._panel.postMessage({ command: "sdkListResult", data: sdkList });
     } catch {
       // Silently ignore background fetch failures
     } finally {
@@ -378,10 +367,10 @@ export class SDKPanel {
       const sdkList = await listAvailableSDKs();
       this._cachedSDKList = sdkList;
       await this.syncSdkStateFromList(sdkList);
-      this._panel.webview.postMessage({ command: "sdkListResult", data: sdkList });
+      this._panel.postMessage({ command: "sdkListResult", data: sdkList });
     } catch (error) {
       notifyError("SDK List", vscode.l10n.t("Failed to list SDKs: {0}", String(error)));
-      this._panel.webview.postMessage({
+      this._panel.postMessage({
         command: "sdkListResult",
         data: { success: false, versions: [], error: `Failed to list SDKs: ${error}` },
       });
@@ -420,13 +409,13 @@ export class SDKPanel {
 
   private getHtmlForWebview(): string {
     const nonce = generateNonce();
-    const cssUri = this._panel.webview.asWebviewUri(
+    const cssUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "src", "panels", "sdk_panel", "sdk-panel.css"),
     );
-    const codiconUri = this._panel.webview.asWebviewUri(
+    const codiconUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "node_modules", "@vscode", "codicons", "dist", "codicon.css"),
     );
-    const jsUri = this._panel.webview.asWebviewUri(
+    const jsUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "dist", "webview", "sdk_panel", "sdk-panel.js"),
     );
 
@@ -435,12 +424,13 @@ export class SDKPanel {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource}; font-src ${this._panel.webview.cspSource}; img-src ${this._panel.webview.cspSource} data:; script-src 'nonce-${nonce}';">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.cspSource}; font-src ${this._panel.cspSource}; img-src ${this._panel.cspSource} data:; script-src 'nonce-${nonce}';">
             <title>Zephyr SDK</title>
             <link rel="stylesheet" type="text/css" href="${cssUri}">
             <link rel="stylesheet" type="text/css" href="${codiconUri}" id="vscode-codicon-stylesheet">
         </head>
         <body>
+          ${configurationNavigation("sdk")}
           ${webviewMessages(nonce)}
             <sdk-app></sdk-app>
             <script nonce="${nonce}" src="${jsUri}"></script>

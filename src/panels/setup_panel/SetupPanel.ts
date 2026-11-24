@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { ConfigurationPage } from "../configuration-page";
+import { configurationNavigation } from "../configuration-navigation";
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
 import * as path from "upath";
@@ -29,7 +31,7 @@ import type { SetupPanelData, ActiveWorkspaceData, WorkspaceListItem, ProjectLis
 
 export class SetupPanel {
   public static currentPanel: SetupPanel | undefined;
-  private readonly _panel: vscode.WebviewPanel;
+  private readonly _panel: ConfigurationPage;
   private readonly _extensionPath: string;
   private readonly _context: vscode.ExtensionContext;
   private _disposables: vscode.Disposable[] = [];
@@ -43,26 +45,13 @@ export class SetupPanel {
     wsConfig: WorkspaceConfig,
     globalConfig: GlobalConfig
   ) {
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
-
     if (SetupPanel.currentPanel) {
-      SetupPanel.currentPanel._panel.reveal(column);
+      SetupPanel.currentPanel._panel.show();
       SetupPanel.currentPanel.updateContent(wsConfig, globalConfig);
       return SetupPanel.currentPanel;
     }
 
-    const panel = vscode.window.createWebviewPanel(
-      "zephyrIDESetup",
-      vscode.l10n.t("Zephyr IDE: Overview"),
-      column || vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(extensionPath)],
-      }
-    );
+    const panel = ConfigurationPage.open(extensionPath);
 
     SetupPanel.currentPanel = new SetupPanel(
       panel,
@@ -75,7 +64,7 @@ export class SetupPanel {
   }
 
   private constructor(
-    panel: vscode.WebviewPanel,
+    panel: ConfigurationPage,
     extensionPath: string,
     context: vscode.ExtensionContext,
     wsConfig: WorkspaceConfig,
@@ -87,7 +76,7 @@ export class SetupPanel {
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    this._panel.webview.onDidReceiveMessage(
+    this._panel.onDidReceiveMessage(
       (message) => { this.handleWebviewMessage(message); },
       null,
       this._disposables
@@ -104,7 +93,7 @@ export class SetupPanel {
     this.currentGlobalConfig = globalConfig;
 
     if (!this._htmlInitialized) {
-      this._panel.webview.html = this.getHtmlForWebview();
+      this._panel.html = this.getHtmlForWebview();
       this._htmlInitialized = true;
     }
 
@@ -115,7 +104,7 @@ export class SetupPanel {
     }
     this._lastPostedJson = json;
 
-    void this._panel.webview.postMessage({
+    void this._panel.postMessage({
       command: "updateContent",
       data,
     });
@@ -140,6 +129,8 @@ export class SetupPanel {
     openZephyrIDEManager: "zephyr-ide.open-zephyr-ide-manager",
     openWorkspacePanel: "zephyr-ide.open-workspace-panel",
     openFolder: "vscode.openFolder",
+    selectWestModules: "zephyr-ide.select-west-modules",
+    updateSelectedWestModules: "zephyr-ide.update-selected-west-modules",
     westUpdate: "zephyr-ide.west-update",
     manageWorkspace: "zephyr-ide.manage-workspaces",
     selectExistingWestWorkspace: "zephyr-ide.select-existing-west-workspace",
@@ -163,7 +154,7 @@ export class SetupPanel {
     switch (message.command) {
       case "ready":
         if (this.currentWsConfig && this.currentGlobalConfig) {
-          void this._panel.webview.postMessage({
+          void this._panel.postMessage({
             command: "updateContent",
             data: this.generatePanelData(this.currentWsConfig, this.currentGlobalConfig),
           });
@@ -382,6 +373,7 @@ export class SetupPanel {
       workspaceInitialized,
       hasValidSetupState,
       toolsReady: globalConfig.toolsAvailable ?? false,
+      sdkVersion: globalConfig.sdkVersion,
       sdkReady: globalConfig.sdkInstalled ?? false,
       westUpdated: wsConfig.activeSetupState?.westUpdated ?? false,
       initialSetupComplete: workspaceInitialized,
@@ -399,13 +391,13 @@ export class SetupPanel {
 
   private getHtmlForWebview(): string {
     const nonce = generateNonce();
-    const cssUri = this._panel.webview.asWebviewUri(
+    const cssUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "src", "panels", "setup_panel", "setup-panel.css")
     );
-    const codiconUri = this._panel.webview.asWebviewUri(
+    const codiconUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "node_modules", "@vscode", "codicons", "dist", "codicon.css")
     );
-    const jsUri = this._panel.webview.asWebviewUri(
+    const jsUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "dist", "webview", "setup_panel", "setup-panel.js")
     );
 
@@ -414,12 +406,13 @@ export class SetupPanel {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource}; font-src ${this._panel.webview.cspSource}; img-src ${this._panel.webview.cspSource} data:; script-src 'nonce-${nonce}';">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.cspSource}; font-src ${this._panel.cspSource}; img-src ${this._panel.cspSource} data:; script-src 'nonce-${nonce}';">
             <title>Zephyr IDE Setup & Configuration</title>
             <link rel="stylesheet" type="text/css" href="${cssUri}">
             <link rel="stylesheet" type="text/css" href="${codiconUri}" id="vscode-codicon-stylesheet">
         </head>
         <body>
+          ${configurationNavigation("overview")}
           ${webviewMessages(nonce)}
             <setup-app></setup-app>
             <script nonce="${nonce}" src="${jsUri}"></script>

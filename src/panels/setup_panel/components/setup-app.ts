@@ -120,6 +120,8 @@ export class SetupApp extends ZephyrLitElement {
             </div>
           </div>
 
+          ${this._renderSetupNavigation(d)}
+
           ${this._renderReadinessBanner(d)}
 
           ${!environmentReady ? html`<div class="setup-main-layout">${this._renderSetupSteps(d, promoteWorkspaceList)}</div>` : nothing}
@@ -146,8 +148,26 @@ export class SetupApp extends ZephyrLitElement {
   }
 
   // ---------------------------------------------------------------------------
-  // Readiness banner
+  // Setup navigation and readiness
   // ---------------------------------------------------------------------------
+
+  private _renderSetupNavigation(d: SetupPanelData) {
+    const action = (command: string, icon: string, label: string, status?: string) => html`
+      <button type="button" @click=${() => this._cmd(command)}>
+        <span class="codicon codicon-${icon}" aria-hidden="true"></span>
+        <span>${label}</span>${status ? html`<small>${status}</small>` : nothing}
+      </button>`;
+    const sdkStatus = d.sdkVersion ? `v${d.sdkVersion}` : panelText("Installed");
+    return html`
+      <nav class="setup-navigation" aria-label=${panelText("Setup & Configuration")}>
+        ${action("openHostToolsPanel", "tools", panelText("Host Tools"), d.toolsReady ? panelText("Ready") : panelText("Setup Required"))}
+        ${action("openSDKPanel", "desktop-download", "Zephyr SDK", d.sdkReady ? sdkStatus : panelText("Not Installed"))}
+        ${action("openWorkspacePanel", "folder-opened", panelText("Workspace Setup"), d.workspaceInitialized ? panelText("Initialized") : panelText("Setup Required"))}
+        ${action("selectWestModules", "checklist", panelText("Select west projects to update"))}
+        ${action("updateSelectedWestModules", "sync", panelText("Update selected west modules"), d.westUpdated ? panelText("Updated") : panelText("Not Updated"))}
+        ${action("openRunnerProfilePanel", "chip", panelText("Runner Profiles"))}
+      </nav>`;
+  }
 
   private _renderReadinessBanner(d: SetupPanelData) {
     const completedCount = [d.toolsReady, d.workspaceInitialized, d.sdkReady].filter(Boolean).length;
@@ -457,24 +477,6 @@ export class SetupApp extends ZephyrLitElement {
       <div class="quick-actions-section">
         <h3>${panelText("Quick Actions")}</h3>
         <div class="quick-actions-grid">
-          <div class="quick-action-item" @click=${() => this._cmd("openHostToolsPanel")} role="button" tabindex="0" data-keyboard-command="true">
-            <span class="codicon codicon-tools"></span>
-            <div class="quick-action-content">
-              <strong>${panelText("Host Tools")}</strong>
-              <span class="quick-action-status ${d.toolsReady ? "status-success" : "status-warning"}">${d.toolsReady ? panelText("Ready") : panelText("Setup Required")}</span>
-              <p>${panelText("Install and verify build tools, compilers, and utilities for Zephyr development.")}</p>
-            </div>
-          </div>
-
-          <div class="quick-action-item" @click=${() => this._cmd("openSDKPanel")} role="button" tabindex="0" data-keyboard-command="true">
-            <span class="codicon codicon-${d.sdkReady ? "package" : "cloud-download"}"></span>
-            <div class="quick-action-content">
-              <strong>${d.sdkReady ? panelText("Manage SDK & Toolchains") : panelText("Install SDK")}</strong>
-              <span class="quick-action-status ${d.sdkReady ? "status-success" : "status-warning"}">${d.sdkReady ? panelText("Installed") : panelText("Setup Required")}</span>
-              <p>${d.sdkReady ? panelText("View installed SDK toolchains and install additional target architectures.") : panelText("Download and install Zephyr SDK toolchains for target architectures.")}</p>
-            </div>
-          </div>
-
           <div class="quick-action-item" @click=${() => this._cmd("openZephyrIDEManager")} role="button" tabindex="0" data-keyboard-command="true">
             <span class="codicon codicon-package"></span>
             <div class="quick-action-content">
@@ -508,13 +510,6 @@ export class SetupApp extends ZephyrLitElement {
             </div>
           </div>
 
-          <div class="quick-action-item" @click=${() => this._cmd("openRunnerProfilePanel")} role="button" tabindex="0" data-keyboard-command="true">
-            <span class="codicon codicon-debug-alt-small"></span>
-            <div class="quick-action-content">
-              <strong>${panelText("Runner Profiles")}</strong>
-              <p>${panelText("Create and manage reusable flash, debug, and attach profiles for your builds.")}</p>
-            </div>
-          </div>
         </div>
       </div>`;
   }

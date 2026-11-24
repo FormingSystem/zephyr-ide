@@ -163,8 +163,6 @@
   "zephyr-ide.tree-view.reset-build-profile.title": "Zephyr IDE: 撤销本机运行器配置覆盖",
   "zephyr-ide.manage-build-variables.title": "Zephyr IDE: 管理构建变量",
   "zephyr-ide.manage-project-variables.title": "Zephyr IDE: 管理工程变量",
-  "zephyrIdeExtensionSetup.name": "扩展设置",
-  "zephyrIdeExtensionSetup.contextualTitle": "Zephyr IDE",
   "zephyrIdeWestWorkspaces.name": "west 工作区",
   "zephyrIdeWestWorkspaces.contextualTitle": "Zephyr IDE 工作区",
   "zephyrIdeProjects.name": "工程",

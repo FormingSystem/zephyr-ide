@@ -45,6 +45,7 @@ function formatValue(value: boolean | string | null): string {
 @customElement("settings-app")
 export class SettingsApp extends ZephyrLitElement {
   @state() private _settings: SettingState[] = [];
+  @state() private _selectedSection = panelText("General Settings");
   /** Track which scope the user has selected per-key */
   private _targetScopes: Record<string, string> = {};
 
@@ -185,6 +186,7 @@ export class SettingsApp extends ZephyrLitElement {
       },
     ].filter(section => section.settings.length > 0);
 
+    const selected = sections.find(section => section.title === this._selectedSection) ?? sections[0];
     const renderSetting = (setting: SettingState) =>
       setting.type === "boolean" ? this._renderBoolSetting(setting) :
         setting.type === "string" ? (setting.pathType === "folder" ? this._renderStringSetting(setting) : this._renderTextSetting(setting)) :
@@ -213,16 +215,14 @@ export class SettingsApp extends ZephyrLitElement {
           <p>${panelText("Configure Zephyr IDE extension settings. Changes are saved automatically. Use the scope selector to choose whether a setting applies to this workspace only or to all workspaces (User).")}</p>
         </div>
 
-        ${sections.map((section, sectionIndex) => html`
-          ${sectionIndex > 0 ? html`<vscode-divider></vscode-divider>` : nothing}
-          <h2>${section.title}</h2>
-          <div class="settings-group">
-            ${section.settings.map((setting, settingIndex) => html`
-              ${settingIndex > 0 ? html`<vscode-divider></vscode-divider>` : nothing}
-              ${renderSetting(setting)}
-            `)}
-          </div>
-        `)}
+        <div class="settings-categories" role="group" aria-label=${panelText("Settings")}>
+          ${sections.map(section => html`
+            <button type="button" aria-pressed=${section === selected}
+              @click=${() => { this._selectedSection = section.title; }}>${section.title}</button>`)}
+        </div>
+        ${selected ? html`<section class="settings-group" aria-label=${selected.title}>
+          ${selected.settings.map(renderSetting)}
+        </section>` : nothing}
       </div>
     `;
   }

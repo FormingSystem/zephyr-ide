@@ -24,6 +24,7 @@ export interface SetupPanelData {
   workspaceInitialized: boolean;
   hasValidSetupState: boolean;
   toolsReady: boolean;
+  sdkVersion?: string;
   sdkReady: boolean;
   westUpdated: boolean;
   initialSetupComplete: boolean;

@@ -308,6 +308,40 @@
    7. Quick Actions section
    =================================================================== */
 
+.setup-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.setup-navigation button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border: 1px solid var(--vscode-contrastBorder, transparent);
+    border-radius: 3px;
+    color: var(--vscode-foreground);
+    background: var(--vscode-editorWidget-background);
+    font: inherit;
+    cursor: pointer;
+}
+
+.setup-navigation button:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+}
+
+.setup-navigation button:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+}
+
+.setup-navigation small {
+    color: var(--vscode-descriptionForeground);
+}
+
 .quick-actions-section {
     margin-top: 32px;
 }

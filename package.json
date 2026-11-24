@@ -480,6 +480,11 @@
     "menus": {
       "view/title": [
         {
+          "command": "zephyr-ide.open-settings-panel",
+          "group": "navigation@0",
+          "when": "view == zephyrIdeWestWorkspaces"
+        },
+        {
           "command": "zephyr-ide.add-project",
           "group": "navigation",
           "when": "view == zephyrIdeProjects"
@@ -658,13 +663,6 @@
     },
     "views": {
       "zephyr-ide-main": [
-        {
-          "id": "zephyrIdeExtensionSetup",
-          "type": "webview",
-          "name": "%zephyrIdeExtensionSetup.name%",
-          "icon": "media/logo_small.jpg",
-          "contextualTitle": "%zephyrIdeExtensionSetup.contextualTitle%"
-        },
         {
           "id": "zephyrIdeWestWorkspaces",
           "name": "%zephyrIdeWestWorkspaces.name%",
@@ -1083,7 +1081,8 @@
       },
       {
         "command": "zephyr-ide.open-setup-panel",
-        "title": "%zephyr-ide.open-setup-panel.title%"
+        "title": "%zephyr-ide.open-setup-panel.title%",
+        "icon": "$(dashboard)"
       },
       {
         "command": "zephyr-ide.open-setup-panel-workspace",
@@ -1099,7 +1098,8 @@
       },
       {
         "command": "zephyr-ide.open-settings-panel",
-        "title": "%zephyr-ide.open-settings-panel.title%"
+        "title": "%zephyr-ide.open-settings-panel.title%",
+        "icon": "$(settings-gear)"
       },
       {
         "command": "zephyr-ide.open-host-tools-panel",

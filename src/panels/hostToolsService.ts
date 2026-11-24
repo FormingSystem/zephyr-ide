@@ -122,7 +122,7 @@ export class HostToolsService {
   private _busy = false;
 
   constructor(
-    private readonly webview: vscode.Webview,
+    private readonly webview: Pick<vscode.Webview, "postMessage">,
     private readonly config: HostToolsServiceConfig
   ) { }
 

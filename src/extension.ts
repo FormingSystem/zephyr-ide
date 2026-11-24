@@ -22,7 +22,6 @@ import * as fs from "fs";
 
 import { ActiveProjectView } from "./tree_views/ActiveProjectView";
 import { ProjectTreeView } from "./tree_views/ProjectTreeView";
-import { ExtensionSetupView } from "./tree_views/ExtensionSetupView";
 import { WestWorkspaceView } from "./tree_views/WestWorkspaceView";
 import { ProjectConfigView } from "./tree_views/ProjectConfigView";
 import { SetupPanel } from "./panels/setup_panel/SetupPanel";
@@ -214,18 +213,6 @@ async function markWorkspaceSetupComplete(
       }
     }
   }
-}
-
-/** Register a webview view provider with retained context. */
-function registerWebviewView(
-  context: vscode.ExtensionContext,
-  viewId: string,
-  provider: vscode.WebviewViewProvider
-) {
-  context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(viewId, provider,
-      { webviewOptions: { retainContextWhenHidden: true } })
-  );
 }
 
 /** Register a native TreeDataProvider view and wire up expand/collapse handlers if present. */
@@ -747,11 +734,6 @@ export async function activate(context: vscode.ExtensionContext) {
     context,
     wsConfig
   );
-  const extensionSetupView = new ExtensionSetupView(
-    context.extensionUri,
-    wsConfig,
-    globalConfig
-  );
   const westWorkspaceView = new WestWorkspaceView(
     context.extensionPath,
     context,
@@ -851,10 +833,31 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // -- Register native TreeViews --
   const activeProjectTreeView = registerTreeView(context, "zephyrIdeActiveProject", activeProjectView);
-  registerTreeView(context, "zephyrIdeProjects", projectTreeView);
-  registerTreeView(context, "zephyrIdeProjectStatus", projectConfigView);
-  registerWebviewView(context, "zephyrIdeExtensionSetup", extensionSetupView);
-  registerTreeView(context, "zephyrIdeWestWorkspaces", westWorkspaceView);
+  const sidebarViews = [
+    activeProjectTreeView,
+    registerTreeView(context, "zephyrIdeProjects", projectTreeView),
+    registerTreeView(context, "zephyrIdeProjectStatus", projectConfigView),
+    registerTreeView(context, "zephyrIdeWestWorkspaces", westWorkspaceView),
+  ];
+
+  const openSetupOverview = () => {
+    SetupPanel.createOrShow(context.extensionPath, context, wsConfig, globalConfig);
+  };
+
+  // VS Code reports visibility per tree, including when restoring the sidebar at startup.
+  let sidebarVisible = false;
+  const onSidebarVisibilityChanged = () => {
+    const visible = sidebarViews.some(view => view.visible);
+    const opening = visible && !sidebarVisible;
+    sidebarVisible = visible;
+    if (opening) {
+      SettingsPanel.createOrShow(context.extensionPath);
+    }
+  };
+  for (const view of sidebarViews) {
+    context.subscriptions.push(view.onDidChangeVisibility(onSidebarVisibilityChanged));
+  }
+  onSidebarVisibilityChanged();
 
   // -- ActiveProjectView inline action commands --
   context.subscriptions.push(
@@ -1174,7 +1177,7 @@ export async function activate(context: vscode.ExtensionContext) {
             true
           );
         }
-        extensionSetupView.updateWebView(wsConfig, globalConfig);
+        SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
         return res;
       }
     )
@@ -1184,7 +1187,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("zephyr-ide.setup-west-environment", async () => {
       if (wsConfig.activeSetupState) {
         await setupWestEnvironment(context, wsConfig, globalConfig);
-        extensionSetupView.updateWebView(wsConfig, globalConfig);
+        SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
       } else {
         notifyError("West Environment", vscode.l10n.t("No active workspace. Set up a workspace first."));
       }
@@ -1231,7 +1234,7 @@ export async function activate(context: vscode.ExtensionContext) {
         wsConfig.activeSetupState.pythonEnvironmentSetup
       ) {
         await westInit(context, wsConfig, globalConfig);
-        extensionSetupView.updateWebView(wsConfig, globalConfig);
+        SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
       } else {
         notifyError("West Init",
           vscode.l10n.t("Run `Zephyr IDE: Setup West Environment` first.")
@@ -1269,7 +1272,7 @@ export async function activate(context: vscode.ExtensionContext) {
       } catch (error) {
         notifyError("West Update", String(error));
       } finally {
-        extensionSetupView.updateWebView(wsConfig, globalConfig);
+        SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
         void vscode.commands.executeCommand("zephyr-ide.update-web-view");
       }
     })
@@ -1361,7 +1364,7 @@ export async function activate(context: vscode.ExtensionContext) {
       wsConfig.activeProject = undefined;
       await setWorkspaceState(context, wsConfig);
       void vscode.commands.executeCommand("zephyr-ide.update-web-view");
-      extensionSetupView.updateWebView(wsConfig, globalConfig);
+      SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
     })
   );
 
@@ -1371,7 +1374,7 @@ export async function activate(context: vscode.ExtensionContext) {
       async () => {
         await loadProjectsFromFile(wsConfig);
         void vscode.commands.executeCommand("zephyr-ide.update-web-view");
-        extensionSetupView.updateWebView(wsConfig, globalConfig);
+        SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
       }
     )
   );
@@ -1384,7 +1387,7 @@ export async function activate(context: vscode.ExtensionContext) {
         if (result === undefined) {
           void vscode.window.showInformationMessage(vscode.l10n.t("No sample projects declared in .vscode/zephyr-ide.json"));
         } else if (result) {
-          extensionSetupView.updateWebView(wsConfig, globalConfig);
+          SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
           void vscode.commands.executeCommand("zephyr-ide.update-web-view");
         }
       }
@@ -1426,7 +1429,7 @@ export async function activate(context: vscode.ExtensionContext) {
       const projectPath = await project.createNewProjectFromSample(context, wsConfig);
       if (projectPath !== undefined) {
         const result = await project.addProject(wsConfig, context, projectPath);
-        extensionSetupView.updateWebView(wsConfig, globalConfig);
+        SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
         void vscode.commands.executeCommand("zephyr-ide.update-web-view");
         return result;
       }
@@ -1436,7 +1439,7 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand("zephyr-ide.add-project", async () => {
       const result = await project.addProject(wsConfig, context, undefined);
-      extensionSetupView.updateWebView(wsConfig, globalConfig);
+      SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
       void vscode.commands.executeCommand("zephyr-ide.update-web-view");
       return result;
     })
@@ -1847,8 +1850,6 @@ export async function activate(context: vscode.ExtensionContext) {
       activeProjectTreeView.title = activeProjectView.title;
       projectTreeView.updateWebView(wsConfig);
       projectConfigView.updateWebView(wsConfig);
-      // Ensure the setup panel stays in sync as well
-      extensionSetupView.updateWebView(wsConfig, globalConfig);
       westWorkspaceView.updateWebView(wsConfig, globalConfig);
       if (SetupPanel.currentPanel) {
         SetupPanel.currentPanel.updateContent(wsConfig, globalConfig);
@@ -2140,7 +2141,7 @@ export async function activate(context: vscode.ExtensionContext) {
       "zephyr-ide.reset-zephyr-install-selection",
       async () => {
         await clearSetupState(context, wsConfig);
-        extensionSetupView.updateWebView(wsConfig, globalConfig);
+        SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
       }
     )
   );
@@ -2162,7 +2163,7 @@ export async function activate(context: vscode.ExtensionContext) {
           wsConfig.activeSetupState.westUpdated = true;
           await saveSetupState(context, wsConfig, globalConfig);
         }
-        extensionSetupView.updateWebView(wsConfig, globalConfig);
+        SetupPanel.currentPanel?.updateContent(wsConfig, globalConfig);
       }
     )
   );
@@ -2379,15 +2380,7 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("zephyr-ide.open-setup-panel", async () => {
-      SetupPanel.createOrShow(
-        context.extensionPath,
-        context,
-        wsConfig,
-        globalConfig
-      );
-    }
-    )
+    vscode.commands.registerCommand("zephyr-ide.open-setup-panel", openSetupOverview)
   );
 
   context.subscriptions.push(

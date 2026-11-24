@@ -27,9 +27,14 @@ declare function acquireVsCodeApi(): WebviewApi;
 
 /** Lazily acquired singleton – call once per webview entry point. */
 let _api: WebviewApi | undefined;
-export function getVsCodeApi(): WebviewApi {
+export function getVsCodeApi(configurationGeneration?: string): WebviewApi {
   if (!_api) {
-    _api = acquireVsCodeApi();
+    const api = acquireVsCodeApi();
+    _api = configurationGeneration ? {
+      getState: () => api.getState(),
+      setState: state => api.setState(state),
+      postMessage: message => api.postMessage({ ...message as object, configurationGeneration: Number(configurationGeneration) }),
+    } : api;
   }
   return _api;
 }

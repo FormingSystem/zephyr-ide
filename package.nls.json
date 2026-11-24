@@ -163,8 +163,6 @@
   "zephyr-ide.tree-view.reset-build-profile.title": "Zephyr IDE: Revert Local Runner Profile Override",
   "zephyr-ide.manage-build-variables.title": "Zephyr IDE: Manage Build Variables",
   "zephyr-ide.manage-project-variables.title": "Zephyr IDE: Manage Project Variables",
-  "zephyrIdeExtensionSetup.name": "Extension Setup",
-  "zephyrIdeExtensionSetup.contextualTitle": "Zephyr IDE",
   "zephyrIdeWestWorkspaces.name": "West Workspaces",
   "zephyrIdeWestWorkspaces.contextualTitle": "Zephyr IDE West Workspaces",
   "zephyrIdeProjects.name": "Projects",

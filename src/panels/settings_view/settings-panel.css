@@ -197,3 +197,23 @@
         min-width: 0;
     }
 }
+
+.settings-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 16px 0;
+}
+.settings-categories button {
+    padding: 5px 10px;
+    font: inherit;
+    color: var(--vscode-button-secondaryForeground);
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-contrastBorder, transparent);
+    cursor: pointer;
+}
+.settings-categories button[aria-pressed="true"] {
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+}
+.settings-categories button:focus-visible { outline: 1px solid var(--vscode-focusBorder); }

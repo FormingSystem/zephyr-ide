@@ -774,3 +774,24 @@ th {
   gap: 8px;
   margin-top: 4px;
 }
+
+.configuration-navigation {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--vscode-editor-background);
+    border-bottom: 1px solid var(--vscode-panel-border);
+}
+.configuration-navigation a {
+    color: var(--vscode-foreground);
+    padding: 5px 9px;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+}
+.configuration-navigation a:hover { background: var(--vscode-toolbar-hoverBackground); }
+.configuration-navigation a[aria-current="page"] { border-color: var(--vscode-focusBorder); }
+.configuration-navigation a:focus-visible { outline: 1px solid var(--vscode-focusBorder); }

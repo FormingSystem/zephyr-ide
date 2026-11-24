@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { ConfigurationPage } from "../configuration-page";
+import { configurationNavigation } from "../configuration-navigation";
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
 import { WorkspaceConfig, GlobalConfig } from "../../setup_utilities/types";
@@ -23,7 +25,7 @@ import { generateNonce } from "../webview_shared/nonce";
 
 export class HostToolInstallView {
   public static currentPanel: HostToolInstallView | undefined;
-  private readonly _panel: vscode.WebviewPanel;
+  private readonly _panel: ConfigurationPage;
   private readonly _extensionPath: string;
   private readonly _context: vscode.ExtensionContext;
   private _disposables: vscode.Disposable[] = [];
@@ -38,29 +40,13 @@ export class HostToolInstallView {
     wsConfig: WorkspaceConfig,
     globalConfig: GlobalConfig
   ) {
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
-
     if (HostToolInstallView.currentPanel) {
-      HostToolInstallView.currentPanel._panel.reveal(column);
+      HostToolInstallView.currentPanel._panel.show();
       HostToolInstallView.currentPanel.updateContent(wsConfig, globalConfig);
       return HostToolInstallView.currentPanel;
     }
 
-    const panel = vscode.window.createWebviewPanel(
-      "zephyrIDEHostTools",
-      vscode.l10n.t("Zephyr IDE: Host Tools"),
-      column || vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        localResourceRoots: [vscode.Uri.file(extensionPath)],
-        // Installs can run for a while and stream progress messages; without
-        // this, switching tabs mid-install tears down the webview and the
-        // panel comes back showing stale pre-install cards.
-        retainContextWhenHidden: true,
-      }
-    );
+    const panel = ConfigurationPage.open(extensionPath);
 
     HostToolInstallView.currentPanel = new HostToolInstallView(
       panel,
@@ -73,7 +59,7 @@ export class HostToolInstallView {
   }
 
   private constructor(
-    panel: vscode.WebviewPanel,
+    panel: ConfigurationPage,
     extensionPath: string,
     context: vscode.ExtensionContext,
     wsConfig: WorkspaceConfig,
@@ -82,7 +68,7 @@ export class HostToolInstallView {
     this._panel = panel;
     this._extensionPath = extensionPath;
     this._context = context;
-    this._service = new HostToolsService(panel.webview, {
+    this._service = new HostToolsService(panel, {
       ...HOST_TOOL_INSTALL_VIEW_CONFIG,
       onStatusChanged: () => {
         // Note: this deliberately does NOT re-trigger checkStatus(). It used
@@ -94,7 +80,7 @@ export class HostToolInstallView {
         // The webview already gets authoritative per-package updates from the
         // check/install flows themselves, so no extra refresh is needed here.
         // Propagate state changes (toolsAvailable, pendingRestart list) to all
-        // other views — ExtensionSetupView tree badge and SetupPanel overview.
+        // the setup overview.
         void vscode.commands.executeCommand("zephyr-ide.update-web-view");
       },
     });
@@ -102,7 +88,7 @@ export class HostToolInstallView {
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    this._panel.webview.onDidReceiveMessage(
+    this._panel.onDidReceiveMessage(
       (message) => {
         this.handleWebviewMessage(message);
       },
@@ -121,7 +107,7 @@ export class HostToolInstallView {
     this._service.setStateRefs({ context: this._context, wsConfig, globalConfig });
 
     if (!this._htmlInitialized) {
-      this._panel.webview.html = this.getHtmlForWebview();
+      this._panel.html = this.getHtmlForWebview();
       this._htmlInitialized = true;
     }
   }
@@ -177,7 +163,7 @@ export class HostToolInstallView {
   }
 
   private getHtmlForWebview(): string {
-    const cssUri = this._panel.webview.asWebviewUri(
+    const cssUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(
         vscode.Uri.file(this._extensionPath),
         "src",
@@ -187,7 +173,7 @@ export class HostToolInstallView {
       )
     );
 
-    const codiconUri = this._panel.webview.asWebviewUri(
+    const codiconUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(
         vscode.Uri.file(this._extensionPath),
         "node_modules",
@@ -198,7 +184,7 @@ export class HostToolInstallView {
       )
     );
 
-    const jsUri = this._panel.webview.asWebviewUri(
+    const jsUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(
         vscode.Uri.file(this._extensionPath),
         "dist",
@@ -215,12 +201,13 @@ export class HostToolInstallView {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource}; font-src ${this._panel.webview.cspSource}; img-src ${this._panel.webview.cspSource} data:; script-src 'nonce-${nonce}';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.cspSource}; font-src ${this._panel.cspSource}; img-src ${this._panel.cspSource} data:; script-src 'nonce-${nonce}';">
         <title>Host Tools Installation</title>
         <link rel="stylesheet" type="text/css" href="${cssUri}">
         <link rel="stylesheet" type="text/css" href="${codiconUri}" id="vscode-codicon-stylesheet">
     </head>
     <body>
+          ${configurationNavigation("tools")}
         <host-tools-app></host-tools-app>
         ${webviewMessages(nonce)}
         <script nonce="${nonce}" src="${jsUri}"></script>

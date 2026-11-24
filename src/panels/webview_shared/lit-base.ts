@@ -28,7 +28,9 @@ import { getVsCodeApi, WebviewApi } from "./webviewTypes";
  * - Includes a `postCommand()` helper for sending messages.
  */
 export class ZephyrLitElement extends LitElement {
-  protected readonly vscodeApi: WebviewApi = getVsCodeApi();
+  protected readonly vscodeApi: WebviewApi = getVsCodeApi(
+    document.querySelector<HTMLMetaElement>('meta[name="zephyr-configuration-generation"]')?.content,
+  );
 
   /** Render into light DOM — external CSS applies to component content. */
   protected createRenderRoot(): this {

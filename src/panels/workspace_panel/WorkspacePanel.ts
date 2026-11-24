@@ -18,6 +18,8 @@ limitations under the License.
 import { tracksRemoteRevision } from "../../utilities/west-revision";
 import { findRepositories } from "../../setup_utilities/github-repositories";
 import { checkWestRemote, editWestProject, projectScope, projectSelection, readWestCatalog, savedProjects, saveProjects } from "../../setup_utilities/west-projects";
+import { ConfigurationPage } from "../configuration-page";
+import { configurationNavigation } from "../configuration-navigation";
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
 import * as path from "upath";
@@ -41,7 +43,7 @@ export class WorkspacePanel {
   /** All open panels, keyed by workspace path (or "__default__" when not specified). */
   private static _panels: Map<string, WorkspacePanel> = new Map();
 
-  private readonly _panel: vscode.WebviewPanel;
+  private readonly _panel: ConfigurationPage;
   private readonly _extensionPath: string;
   private readonly _context: vscode.ExtensionContext;
   private _disposables: vscode.Disposable[] = [];
@@ -81,32 +83,14 @@ export class WorkspacePanel {
     setupPath?: string,
   ) {
     const key = setupPath || "__default__";
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
-
     const existing = WorkspacePanel._panels.get(key);
     if (existing) {
-      existing._panel.reveal(column);
+      if (existing._panel.show()) { existing.webviewReady = false; }
       existing.updateContent(wsConfig, globalConfig);
       return existing;
     }
 
-    const baseName = setupPath ? path.basename(setupPath) : undefined;
-    const title = baseName
-      ? vscode.l10n.t("Workspace: {0}", baseName)
-      : vscode.l10n.t("Zephyr IDE: Workspace Config");
-
-    const panel = vscode.window.createWebviewPanel(
-      "zephyrIDEWorkspace",
-      title,
-      column || vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(extensionPath)],
-      },
-    );
+    const panel = ConfigurationPage.open(extensionPath);
 
     const instance = new WorkspacePanel(
       panel,
@@ -121,7 +105,7 @@ export class WorkspacePanel {
   }
 
   private constructor(
-    panel: vscode.WebviewPanel,
+    panel: ConfigurationPage,
     extensionPath: string,
     context: vscode.ExtensionContext,
     wsConfig: WorkspaceConfig,
@@ -135,7 +119,7 @@ export class WorkspacePanel {
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    this._panel.webview.onDidReceiveMessage(
+    this._panel.onDidReceiveMessage(
       (message) => { this.handleWebviewMessage(message); },
       null,
       this._disposables,
@@ -144,7 +128,7 @@ export class WorkspacePanel {
     // Subscribe to workspace setup progress events and forward to webview
     this._disposables.push(
       onSetupProgress((event) => {
-        this._panel.webview.postMessage({
+        this._panel.postMessage({
           command: 'workspaceSetupProgress',
           data: event,
         });
@@ -176,25 +160,12 @@ export class WorkspacePanel {
     const target = this.getTargetSetupState();
     const workspaceInitialized = target && isWorkspaceInitialized(target.setupState);
 
-    // Update panel title
-    if (target) {
-      const version = target.setupState.zephyrVersion
-        ? formatZephyrVersion(target.setupState.zephyrVersion)
-        : undefined;
-      const baseName = path.basename(target.setupPath);
-      this._panel.title = version
-        ? vscode.l10n.t("Workspace: {0} ({1})", baseName, version)
-        : vscode.l10n.t("Workspace: {0}", baseName);
-    } else {
-      this._panel.title = vscode.l10n.t("Workspace Setup");
-    }
-
     if (!this._htmlInitialized) {
-      this._panel.webview.html = this.getHtmlForWebview();
+      this._panel.html = this.getHtmlForWebview();
       this._htmlInitialized = true;
     }
 
-    void this._panel.webview.postMessage({
+    void this._panel.postMessage({
       command: "updateContent",
       data: this.generatePanelData(wsConfig),
     });
@@ -252,7 +223,7 @@ export class WorkspacePanel {
     switch (message.command) {
       case "ready":
         if (this.currentWsConfig && this.currentGlobalConfig) {
-          void this._panel.webview.postMessage({
+          void this._panel.postMessage({
             command: "updateContent",
             data: this.generatePanelData(this.currentWsConfig),
           });
@@ -266,7 +237,7 @@ export class WorkspacePanel {
           // Replay active progress if any
           const activeProgress = getActiveSetupProgress();
           if (activeProgress) {
-            void this._panel.webview.postMessage({
+            void this._panel.postMessage({
               command: 'workspaceSetupProgress',
               data: activeProgress,
             });
@@ -281,7 +252,7 @@ export class WorkspacePanel {
         return;
       case "searchGitHubRepositories": {
         const { scope, id, owner, query } = message;
-        const reply = (data: object) => this._panel.webview.postMessage({ command: "githubRepositoryResults", scope, id, ...data });
+        const reply = (data: object) => this._panel.postMessage({ command: "githubRepositoryResults", scope, id, ...data });
         void findRepositories(owner, query).then(items => reply({ items }), error => reply({ error: String(error) }));
         return;
       }
@@ -343,7 +314,7 @@ export class WorkspacePanel {
 
   private _pushContentUpdate() {
     if (!this.currentWsConfig) { return; }
-    void this._panel.webview.postMessage({
+    void this._panel.postMessage({
       command: "updateContent",
       data: this.generatePanelData(this.currentWsConfig),
     });
@@ -488,7 +459,7 @@ export class WorkspacePanel {
   public showWestModules() {
     this.pendingModulesTab = true;
     if (this.webviewReady) {
-      void this._panel.webview.postMessage({ command: "showWestModules" });
+      void this._panel.postMessage({ command: "showWestModules" });
       this.pendingModulesTab = false;
     }
   }
@@ -518,7 +489,7 @@ export class WorkspacePanel {
       });
       if (!pending.length) { return; }
 
-      await this._panel.webview.postMessage({ command: "checkingWestRemotes", scope, checking: true });
+      await this._panel.postMessage({ command: "checkingWestRemotes", scope, checking: true });
       const worker = async () => {
         for (let p = pending.pop(); p; p = pending.pop()) {
           await checkWestRemote(this._context, target.setupState, p);
@@ -530,7 +501,7 @@ export class WorkspacePanel {
     } finally {
       this.checkingRemotes = false;
       await this.loadWestProjects();
-      void this._panel.webview.postMessage({ command: "checkingWestRemotes", scope, checking: false });
+      void this._panel.postMessage({ command: "checkingWestRemotes", scope, checking: false });
     }
   }
 
@@ -543,11 +514,11 @@ export class WorkspacePanel {
       const data = await readWestCatalog(this._context, target.setupState);
       if (generation !== this.catalogGeneration) { return; }
       const { detected, unresolved } = projectSelection(this._context, scope);
-      void this._panel.webview.postMessage({ command: "westProjects", ...data, scope, added, editError,
+      void this._panel.postMessage({ command: "westProjects", ...data, scope, added, editError,
         detected, unresolved, selected: savedProjects(this._context, scope) });
     } catch (error) {
       if (generation !== this.catalogGeneration) { return; }
-      void this._panel.webview.postMessage({ command: "westProjects", scope, projects: [], selected: [], error: String(error) });
+      void this._panel.postMessage({ command: "westProjects", scope, projects: [], selected: [], error: String(error) });
     }
   }
 
@@ -775,13 +746,13 @@ export class WorkspacePanel {
 
   private getHtmlForWebview(): string {
     const nonce = generateNonce();
-    const cssUri = this._panel.webview.asWebviewUri(
+    const cssUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "src", "panels", "workspace_panel", "workspace-panel.css"),
     );
-    const codiconUri = this._panel.webview.asWebviewUri(
+    const codiconUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "node_modules", "@vscode", "codicons", "dist", "codicon.css"),
     );
-    const jsUri = this._panel.webview.asWebviewUri(
+    const jsUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "dist", "webview", "workspace_panel", "workspace-panel.js"),
     );
 
@@ -790,12 +761,13 @@ export class WorkspacePanel {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource}; font-src ${this._panel.webview.cspSource}; img-src ${this._panel.webview.cspSource} data:; script-src 'nonce-${nonce}';">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.cspSource}; font-src ${this._panel.cspSource}; img-src ${this._panel.cspSource} data:; script-src 'nonce-${nonce}';">
             <title>Workspace Setup</title>
             <link rel="stylesheet" type="text/css" href="${cssUri}">
             <link rel="stylesheet" type="text/css" href="${codiconUri}" id="vscode-codicon-stylesheet">
         </head>
         <body>
+          ${configurationNavigation("workspace")}
           ${webviewMessages(nonce)}
             <workspace-app></workspace-app>
             <script nonce="${nonce}" src="${jsUri}"></script>

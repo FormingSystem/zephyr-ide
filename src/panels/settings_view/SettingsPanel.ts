@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { ConfigurationPage } from "../configuration-page";
+import { configurationNavigation } from "../configuration-navigation";
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
 import { generateNonce } from "../webview_shared/nonce";
@@ -286,31 +288,18 @@ const SETTINGS: SettingDefinition[] = [
 
 export class SettingsPanel {
   public static currentPanel: SettingsPanel | undefined;
-  private readonly _panel: vscode.WebviewPanel;
+  private readonly _panel: ConfigurationPage;
   private readonly _extensionPath: string;
   private _disposables: vscode.Disposable[] = [];
 
   public static createOrShow(extensionPath: string) {
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
-
     if (SettingsPanel.currentPanel) {
-      SettingsPanel.currentPanel._panel.reveal(column);
+      SettingsPanel.currentPanel._panel.show();
       SettingsPanel.currentPanel.refreshSettings();
       return SettingsPanel.currentPanel;
     }
 
-    const panel = vscode.window.createWebviewPanel(
-      "zephyrIDESettings",
-      vscode.l10n.t("Zephyr IDE: Settings"),
-      column || vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        localResourceRoots: [vscode.Uri.file(extensionPath)],
-        retainContextWhenHidden: true,
-      }
-    );
+    const panel = ConfigurationPage.open(extensionPath);
 
     SettingsPanel.currentPanel = new SettingsPanel(panel, extensionPath);
     return SettingsPanel.currentPanel;
@@ -318,7 +307,7 @@ export class SettingsPanel {
 
   private _htmlInitialized = false;
 
-  private constructor(panel: vscode.WebviewPanel, extensionPath: string) {
+  private constructor(panel: ConfigurationPage, extensionPath: string) {
     this._panel = panel;
     this._extensionPath = extensionPath;
 
@@ -326,7 +315,7 @@ export class SettingsPanel {
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    this._panel.webview.onDidReceiveMessage(
+    this._panel.onDidReceiveMessage(
       (message) => { this.handleWebviewMessage(message); },
       null,
       this._disposables,
@@ -344,7 +333,7 @@ export class SettingsPanel {
 
   private sendUpdate() {
     if (!this._htmlInitialized) {
-      this._panel.webview.html = this.getHtmlForWebview();
+      this._panel.html = this.getHtmlForWebview();
       this._htmlInitialized = true;
     }
     this.refreshSettings();
@@ -389,7 +378,7 @@ export class SettingsPanel {
       };
     });
 
-    this._panel.webview.postMessage({ command: "updateSettings", settings });
+    this._panel.postMessage({ command: "updateSettings", settings });
   }
 
   private async handleWebviewMessage(message: Record<string, any>) {
@@ -429,7 +418,7 @@ export class SettingsPanel {
           openLabel: vscode.l10n.t("Select Folder"),
         });
         if (result && result[0]) {
-          this._panel.webview.postMessage({
+          this._panel.postMessage({
             command: "folderSelected",
             key,
             path: result[0].fsPath,
@@ -462,7 +451,7 @@ export class SettingsPanel {
 
   private getHtmlForWebview(): string {
     const nonce = generateNonce();
-    const cssUri = this._panel.webview.asWebviewUri(
+    const cssUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(
         vscode.Uri.file(this._extensionPath),
         "src",
@@ -472,7 +461,7 @@ export class SettingsPanel {
       )
     );
 
-    const jsUri = this._panel.webview.asWebviewUri(
+    const jsUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(
         vscode.Uri.file(this._extensionPath),
         "dist",
@@ -487,11 +476,12 @@ export class SettingsPanel {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource}; font-src ${this._panel.webview.cspSource}; img-src ${this._panel.webview.cspSource} data:; script-src 'nonce-${nonce}';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.cspSource}; font-src ${this._panel.cspSource}; img-src ${this._panel.cspSource} data:; script-src 'nonce-${nonce}';">
         <title>Zephyr IDE Settings</title>
         <link rel="stylesheet" type="text/css" href="${cssUri}">
     </head>
     <body>
+          ${configurationNavigation("settings")}
       ${webviewMessages(nonce)}
         <settings-app></settings-app>
         <script nonce="${nonce}" src="${jsUri}"></script>

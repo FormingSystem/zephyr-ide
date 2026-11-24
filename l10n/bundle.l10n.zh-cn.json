@@ -1006,6 +1006,7 @@
   "Setting up Python environment": "正在配置 Python 环境",
   "Setting up West Python Environment": "正在配置 west 的 Python 环境",
   "Settings": "设置",
+  "Setup & Configuration": "扩展设置",
   "Setup Required": "待配置",
   "Setup Workspace": "配置工作区",
   "Setup and management actions are hidden while viewing an inactive workspace. Use": "当前工作区尚未启用。请点击上方的",
