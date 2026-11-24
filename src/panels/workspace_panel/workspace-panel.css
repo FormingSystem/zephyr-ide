@@ -351,3 +351,28 @@ west-project-picker .wp-remote-results .wp-row { justify-content: space-between;
 
 west-project-picker textarea { resize: vertical; min-height: 3.5em; font: inherit; box-sizing: border-box; width: 100%; }
 west-project-picker form p { flex-basis: 100%; margin: 0; }
+
+/* Allocate the remaining editor height to the two lists. Short groups shrink
+   to their rows; the intrinsic minimum keeps headings accessible at large zoom. */
+.modules-layout, .modules-layout .ws-state-ready, .modules-content,
+.modules-content west-project-picker, .modules-content .west-panes, .modules-content .west-pane {
+    display: flex;
+    flex-direction: column;
+}
+.modules-layout { height: 100%; }
+.modules-layout .page-header { margin: 0; padding-bottom: 4px; }
+.modules-layout .header-directory { overflow-wrap: anywhere; }
+.modules-layout .ws-state-ready, .modules-content, .modules-content west-project-picker {
+    flex: 1;
+    min-height: 0;
+}
+.modules-content { margin: 0; padding: 6px; }
+.modules-content west-project-picker > :not(.west-panes), .west-pane-header { flex: none; }
+.modules-content .west-panes { flex: 0 1 auto; min-height: 10rem; gap: 8px; margin: 4px 0; }
+.modules-content .west-pane { min-height: 4.5rem; }
+.modules-content .west-pane-list { min-height: 2rem; max-height: none; overflow: auto; }
+@media (max-width: 720px) {
+    west-project-picker .wp-row { flex-wrap: wrap; }
+    west-project-picker .wp-row label { min-width: min(100%, 14rem); }
+    west-project-picker .wp-row label span { overflow-wrap: anywhere; }
+}

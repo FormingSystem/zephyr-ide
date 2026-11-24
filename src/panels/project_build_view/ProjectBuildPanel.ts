@@ -17,6 +17,8 @@ limitations under the License.
 
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
+import { ConfigurationPage } from "../configuration-page";
+import { configurationNavigation } from "../configuration-navigation";
 import * as path from "upath";
 
 import { WorkspaceConfig, GlobalConfig } from "../../setup_utilities/types";
@@ -70,10 +72,9 @@ export class ProjectBuildPanel {
   private static readonly PROJECT_VARIABLE_DEFAULTS_CONFIG_KEY = "zephyr-ide.projectVariableDefaults";
   private static readonly BUILD_VARIABLE_DEFAULTS_CONFIG_KEY = "zephyr-ide.buildVariableDefaults";
 
-  /** All open panels, keyed by project name (or "__default__" when no project specified) */
-  private static _panels: Map<string, ProjectBuildPanel> = new Map();
+  public static currentPanel?: ProjectBuildPanel;
 
-  private readonly _panel: vscode.WebviewPanel;
+  private readonly _panel: ConfigurationPage;
   private readonly _extensionPath: string;
   private readonly _context: vscode.ExtensionContext;
   private _disposables: vscode.Disposable[] = [];
@@ -84,17 +85,8 @@ export class ProjectBuildPanel {
   private _selectedBuildOrTest: string | undefined; // "build:<name>" or "test:<name>"
   private _htmlInitialized = false;
 
-  /** For backward-compat: returns the first open panel, if any */
-  public static get currentPanel(): ProjectBuildPanel | undefined {
-    if (ProjectBuildPanel._panels.size === 0) { return undefined; }
-    return ProjectBuildPanel._panels.values().next().value;
-  }
-
-  /** Update all open panels with new workspace config */
   public static updateAllPanels(wsConfig: WorkspaceConfig, globalConfig: GlobalConfig) {
-    for (const panel of ProjectBuildPanel._panels.values()) {
-      panel.updateContent(wsConfig, globalConfig);
-    }
+    this.currentPanel?.updateContent(wsConfig, globalConfig);
   }
 
   public static createOrShow(
@@ -104,32 +96,14 @@ export class ProjectBuildPanel {
     globalConfig: GlobalConfig,
     projectName?: string,
   ) {
-    const key = projectName ?? "__default__";
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
-
-    const existing = ProjectBuildPanel._panels.get(key);
+    const existing = this.currentPanel;
     if (existing) {
-      existing._panel.reveal(column);
+      existing._panel.show();
       existing.updateContent(wsConfig, globalConfig, projectName);
       return existing;
     }
 
-    const title = projectName
-      ? vscode.l10n.t("Project: {0}", projectName)
-      : vscode.l10n.t("Zephyr IDE: Project Details");
-
-    const panel = vscode.window.createWebviewPanel(
-      "zephyrIDEProjectBuild",
-      title,
-      column || vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(extensionPath)],
-      },
-    );
+    const panel = ConfigurationPage.open(extensionPath);
 
     const instance = new ProjectBuildPanel(
       panel,
@@ -139,12 +113,12 @@ export class ProjectBuildPanel {
       globalConfig,
       projectName,
     );
-    ProjectBuildPanel._panels.set(key, instance);
+    this.currentPanel = instance;
     return instance;
   }
 
   private constructor(
-    panel: vscode.WebviewPanel,
+    panel: ConfigurationPage,
     extensionPath: string,
     context: vscode.ExtensionContext,
     wsConfig: WorkspaceConfig,
@@ -165,7 +139,7 @@ export class ProjectBuildPanel {
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    this._panel.webview.onDidReceiveMessage(
+    this._panel.onDidReceiveMessage(
       (message) => {
         void this.handleMessage(message);
       },
@@ -193,21 +167,16 @@ export class ProjectBuildPanel {
   public updateContent(wsConfig: WorkspaceConfig, globalConfig: GlobalConfig, projectName?: string) {
     this._wsConfig = wsConfig;
     this._globalConfig = globalConfig;
-    if (projectName !== undefined) {
-      this._selectedProject = projectName;
+    const project = projectName ?? wsConfig.activeProject;
+    if (projectName !== undefined || project !== this._selectedProject) {
+      this._selectedProject = project;
       this._selectedBuildOrTest = this.getDefaultSelection();
     }
     this.updateHtml();
   }
 
   public dispose() {
-    // Remove from the panels map
-    for (const [key, panel] of ProjectBuildPanel._panels.entries()) {
-      if (panel === this) {
-        ProjectBuildPanel._panels.delete(key);
-        break;
-      }
-    }
+    ProjectBuildPanel.currentPanel = undefined;
     this._panel.dispose();
     while (this._disposables.length) {
       const x = this._disposables.pop();
@@ -227,18 +196,27 @@ export class ProjectBuildPanel {
     try {
       switch (cmd) {
         case "switchProject":
+          if (!ws.projects[message.project]) { return; }
           this._selectedProject = message.project;
           this._selectedBuildOrTest = this.getDefaultSelection();
-          this._panel.title = message.project
-            ? vscode.l10n.t("Project: {0}", String(message.project))
-            : vscode.l10n.t("Zephyr IDE: Project Details");
+          await setActive(ctx, ws, message.project);
           this.updateHtml();
           return;
-
-        case "switchBuildOrTest":
-          this._selectedBuildOrTest = message.selection || undefined;
+        case "switchBuildOrTest": {
+          const project = this._selectedProject;
+          if (!project || typeof message.selection !== "string") { return; }
+          const selection: string = message.selection;
+          const name = selection.slice(selection.indexOf(":") + 1);
+          if (selection.startsWith("build:") && ws.projects[project]?.buildConfigs[name]) {
+            this._selectedBuildOrTest = selection;
+            await setActive(ctx, ws, project, name);
+          } else if (selection.startsWith("test:") && ws.projects[project]?.twisterConfigs?.[name]) {
+            this._selectedBuildOrTest = selection;
+            await setActive(ctx, ws, project, undefined, undefined, name);
+          }
           this.updateHtml();
           return;
+        }
 
         case "openFile":
           if (message.file) {
@@ -655,11 +633,11 @@ export class ProjectBuildPanel {
         await setActive(this._context, this._wsConfig, targetProject, targetBuild);
       }
     }
-    void this._panel.webview.postMessage({ command: "buildActionStatus", action, state: "started" });
+    void this._panel.postMessage({ command: "buildActionStatus", action, state: "started" });
     try {
       await vscode.commands.executeCommand(commandId);
     } finally {
-      void this._panel.webview.postMessage({ command: "buildActionStatus", action, state: "finished" });
+      void this._panel.postMessage({ command: "buildActionStatus", action, state: "finished" });
     }
   }
 
@@ -667,16 +645,20 @@ export class ProjectBuildPanel {
     void this._updateHtmlAsync();
   }
 
+  private renderRequest = 0;
+
   private async _updateHtmlAsync() {
+    const request = ++this.renderRequest;
     const data = await this.generatePanelData();
+    if (request !== this.renderRequest) { return; }
     if (!this._htmlInitialized) {
-      this._panel.webview.html = this.getHtmlShell();
+      this._panel.html = this.getHtmlShell();
       this._htmlInitialized = true;
     }
     // Always send data — on first render the Lit app component will receive
     // it as soon as it connects; on subsequent updates it triggers reactive
     // rendering without any innerHTML replacement.
-    void this._panel.webview.postMessage({
+    void this._panel.postMessage({
       command: "updateContent",
       data,
     });
@@ -868,11 +850,12 @@ export class ProjectBuildPanel {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource}; font-src ${this._panel.webview.cspSource}; img-src ${this._panel.webview.cspSource} data:; script-src 'nonce-${nonce}';">
+      <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.cspSource}; font-src ${this._panel.cspSource}; img-src ${this._panel.cspSource} data:; script-src 'nonce-${nonce}';">
       <title>Zephyr IDE: Project Details</title>
       ${this.getStylesheetLinks()}
     </head>
     <body>
+      ${configurationNavigation("project")}
       ${webviewMessages(nonce)}
       <project-build-app></project-build-app>
       ${this.getScriptTags(nonce)}
@@ -881,7 +864,7 @@ export class ProjectBuildPanel {
   }
 
   private getStylesheetLinks(): string {
-    const cssUri = this._panel.webview.asWebviewUri(
+    const cssUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(
         vscode.Uri.file(this._extensionPath),
         "src",
@@ -890,7 +873,7 @@ export class ProjectBuildPanel {
         "project-build-panel.css",
       ),
     );
-    const codiconUri = this._panel.webview.asWebviewUri(
+    const codiconUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(
         vscode.Uri.file(this._extensionPath),
         "node_modules",
@@ -907,7 +890,7 @@ export class ProjectBuildPanel {
   }
 
   private getScriptTags(nonce: string): string {
-    const jsUri = this._panel.webview.asWebviewUri(
+    const jsUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(
         vscode.Uri.file(this._extensionPath),
         "dist",

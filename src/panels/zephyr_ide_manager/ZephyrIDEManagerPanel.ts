@@ -15,9 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { importLocalBlob } from "../../setup_utilities/local-blob";
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
+import { importLocalBlob } from "../../setup_utilities/local-blob";
+import { ConfigurationPage } from "../configuration-page";
+import { configurationNavigation } from "../configuration-navigation";
 import { WorkspaceConfig, GlobalConfig } from "../../setup_utilities/types";
 import {
   listModulesWithBlobs,
@@ -39,7 +41,7 @@ import { generateNonce } from "../webview_shared/nonce";
 
 export class ZephyrIDEManagerPanel {
   public static currentPanel: ZephyrIDEManagerPanel | undefined;
-  private readonly _panel: vscode.WebviewPanel;
+  private readonly _panel: ConfigurationPage;
   private readonly _extensionPath: string;
   private readonly _context: vscode.ExtensionContext;
   private _disposables: vscode.Disposable[] = [];
@@ -59,26 +61,14 @@ export class ZephyrIDEManagerPanel {
     wsConfig: WorkspaceConfig,
     globalConfig: GlobalConfig,
   ) {
-    const column = vscode.window.activeTextEditor
-      ? vscode.window.activeTextEditor.viewColumn
-      : undefined;
 
     if (ZephyrIDEManagerPanel.currentPanel) {
-      ZephyrIDEManagerPanel.currentPanel._panel.reveal(column);
+      ZephyrIDEManagerPanel.currentPanel._panel.show();
       ZephyrIDEManagerPanel.currentPanel.updateContent(wsConfig, globalConfig);
       return ZephyrIDEManagerPanel.currentPanel;
     }
 
-    const panel = vscode.window.createWebviewPanel(
-      "zephyrIDEManager",
-      vscode.l10n.t("Zephyr IDE: Manager"),
-      column || vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.file(extensionPath)],
-      },
-    );
+    const panel = ConfigurationPage.open(extensionPath);
 
     ZephyrIDEManagerPanel.currentPanel = new ZephyrIDEManagerPanel(
       panel,
@@ -93,7 +83,7 @@ export class ZephyrIDEManagerPanel {
   private _htmlInitialized = false;
 
   private constructor(
-    panel: vscode.WebviewPanel,
+    panel: ConfigurationPage,
     extensionPath: string,
     context: vscode.ExtensionContext,
     wsConfig: WorkspaceConfig,
@@ -105,7 +95,7 @@ export class ZephyrIDEManagerPanel {
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    this._panel.webview.onDidReceiveMessage(
+    this._panel.onDidReceiveMessage(
       (message) => { this.handleWebviewMessage(message); },
       null,
       this._disposables,
@@ -113,7 +103,7 @@ export class ZephyrIDEManagerPanel {
 
     this._disposables.push(
       onBlobProgress((message) => {
-        this._panel.webview.postMessage({
+        this._panel.postMessage({
           command: "blobInstallProgress",
           data: message,
         });
@@ -121,7 +111,6 @@ export class ZephyrIDEManagerPanel {
     );
 
     this.updateContent(wsConfig, globalConfig);
-    void this.listBlobs();
   }
 
   public updateContent(wsConfig: WorkspaceConfig, globalConfig: GlobalConfig): void {
@@ -129,11 +118,11 @@ export class ZephyrIDEManagerPanel {
     this.currentGlobalConfig = globalConfig;
 
     if (!this._htmlInitialized) {
-      this._panel.webview.html = this.getHtmlForWebview();
+      this._panel.html = this.getHtmlForWebview();
       this._htmlInitialized = true;
     }
 
-    this._panel.webview.postMessage({
+    this._panel.postMessage({
       command: "updateContent",
       data: {
         toolchains: getZephyrIdeToolchains(wsConfig),
@@ -251,47 +240,47 @@ export class ZephyrIDEManagerPanel {
 
   private async listBlobs(): Promise<void> {
     if (!this.currentWsConfig) {
-      this._panel.webview.postMessage({ command: "blobListResult", data: [] as BlobModuleInfo[] });
+      this._panel.postMessage({ command: "blobListResult", data: [] as BlobModuleInfo[] });
       return;
     }
 
-    this._panel.webview.postMessage({ command: "blobListLoading" });
+    this._panel.postMessage({ command: "blobListLoading" });
     try {
       const modules = await listModulesWithBlobs(this.currentWsConfig, this._context);
-      this._panel.webview.postMessage({ command: "blobListResult", data: modules });
+      this._panel.postMessage({ command: "blobListResult", data: modules });
     } catch (error) {
       outputError("Zephyr IDE Manager", `Failed to list blobs: ${String(error)}`);
-      this._panel.webview.postMessage({ command: "blobListResult", data: [] as BlobModuleInfo[] });
+      this._panel.postMessage({ command: "blobListResult", data: [] as BlobModuleInfo[] });
     }
   }
 
   private async installBlobModules(modules: string[]): Promise<void> {
     if (!this.currentWsConfig) {
       notifyError("Zephyr IDE Blobs", vscode.l10n.t("No active workspace configuration."));
-      this._panel.webview.postMessage({ command: "blobInstallResult", data: false });
+      this._panel.postMessage({ command: "blobInstallResult", data: false });
       return;
     }
 
     try {
-      this._panel.webview.postMessage({ command: "blobInstallProgress", data: "Starting blob installation..." });
+      this._panel.postMessage({ command: "blobInstallProgress", data: "Starting blob installation..." });
       const result = await installBlobModulesInteractive(this.currentWsConfig, this._context, modules);
-      this._panel.webview.postMessage({ command: "blobInstallResult", data: result });
+      this._panel.postMessage({ command: "blobInstallResult", data: result });
       await this.listBlobs();
     } catch (error) {
       outputError("Zephyr IDE Manager", `Failed to install blob modules: ${String(error)}`);
-      this._panel.webview.postMessage({ command: "blobInstallResult", data: false });
+      this._panel.postMessage({ command: "blobInstallResult", data: false });
     }
   }
 
   private getHtmlForWebview(): string {
     const nonce = generateNonce();
-    const cssUri = this._panel.webview.asWebviewUri(
+    const cssUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "src", "panels", "zephyr_ide_manager", "zephyr-ide-manager.css"),
     );
-    const codiconUri = this._panel.webview.asWebviewUri(
+    const codiconUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "node_modules", "@vscode", "codicons", "dist", "codicon.css"),
     );
-    const jsUri = this._panel.webview.asWebviewUri(
+    const jsUri = this._panel.asWebviewUri(
       vscode.Uri.joinPath(vscode.Uri.file(this._extensionPath), "dist", "webview", "zephyr_ide_manager", "zephyr-ide-manager.js"),
     );
 
@@ -300,13 +289,14 @@ export class ZephyrIDEManagerPanel {
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource}; font-src ${this._panel.webview.cspSource}; img-src ${this._panel.webview.cspSource} data:; script-src 'nonce-${nonce}';">
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.cspSource}; font-src ${this._panel.cspSource}; img-src ${this._panel.cspSource} data:; script-src 'nonce-${nonce}';">
           <title>Zephyr IDE Manager</title>
           <link rel="stylesheet" type="text/css" href="${cssUri}">
           <link rel="stylesheet" type="text/css" href="${codiconUri}" id="vscode-codicon-stylesheet">
       </head>
       <body>
-        ${webviewMessages(nonce)}
+        ${configurationNavigation("manager")}
+      ${webviewMessages(nonce)}
           <zephyr-ide-manager-app></zephyr-ide-manager-app>
           <script nonce="${nonce}" src="${jsUri}"></script>
       </body>

@@ -1468,5 +1468,9 @@
   "Import local blob": "导入本地二进制组件",
   "Select the declared blob to import": "选择要导入的已声明二进制组件",
   "Download detected project dependencies automatically": "自动下载识别到的工程依赖",
-  "When disabled, project selection only detects modules. Use Download to fetch them.": "关闭后，选择工程时仅识别模块，可点击下载获取所需组件。"
+  "When disabled, project selection only detects modules. Use Download to fetch them.": "关闭后，选择工程时仅识别模块，可点击下载获取所需组件。",
+  "Project requirements": "工程所需组件",
+  "Project configuration": "工程配置",
+  "Tool environment": "工具环境",
+  "Extension settings": "扩展设置"
 }

@@ -64,8 +64,13 @@ export class WorkspaceApp extends ZephyrLitElement {
           this._workspaceSetupActive = false;
         }
         break;
+      case 'showWorkspaceInfo':
+        this.modulesTab = false;
+        this.markNavigation("zephyr-ide.open-workspace-panel");
+        break;
       case 'showWestModules':
         this.modulesTab = true;
+        this.markNavigation("zephyr-ide.select-west-modules");
         void this.updateComplete.then(() => this.querySelector<HTMLInputElement>('west-project-picker input[type="search"]')?.focus());
         break;
       case 'checkingWestRemotes':
@@ -80,6 +85,12 @@ export class WorkspaceApp extends ZephyrLitElement {
         break;
     }
   };
+
+  private markNavigation(command: string) {
+    const nav = document.querySelector(".workbench-tools");
+    nav?.querySelector("[aria-current]")?.removeAttribute("aria-current");
+    nav?.querySelector(`[href="command:${command}"]`)?.setAttribute("aria-current", "page");
+  }
 
   // ── Progress ──────────────────────────────────────────────
 
@@ -156,7 +167,7 @@ export class WorkspaceApp extends ZephyrLitElement {
     const showWorkspaceViewSetup = !showInitializing && showWorkspaceView && d.folderOpen && !d.workspaceInitialized && !d.isNonActive;
 
     return html`
-      <div class="container" @keydown=${this._onKeydown}>
+      <div class=${this.modulesTab && showReadyContent ? "container modules-layout" : "container"} @keydown=${this._onKeydown}>
         <div class="sr-only" role="status" aria-live="polite">${this._statusAnnouncement}</div>
         <a class="breadcrumb-link" @click=${() => this._send('openSetupPanel')}>${panelText("← Overview")}</a>
         <div class="page-header">
@@ -326,13 +337,9 @@ export class WorkspaceApp extends ZephyrLitElement {
 
     return html`
       <div class="ws-state ws-state-ready">
-        ${readyBanner}
-        <nav class="west-selection-tools wp-tabs" aria-label=${panelText("Workspace Setup")}>
-          <button aria-pressed=${!this.modulesTab} @click=${() => { this.modulesTab = false; }}>${panelText("Workspace Information")}</button>
-          <button aria-pressed=${this.modulesTab} @click=${() => { this.modulesTab = true; }}>${panelText("West Git modules")}</button>
-        </nav>
+        ${!this.modulesTab ? readyBanner : nothing}
         ${this.modulesTab ? html`
-          <div class="section-container"><west-project-picker .checking=${this.checkingRemotes} .catalog=${this._catalog} .inactive=${disabled}></west-project-picker></div>
+          <div class="section-container modules-content"><west-project-picker .checking=${this.checkingRemotes} .catalog=${this._catalog} .inactive=${disabled}></west-project-picker></div>
         ` : html`
 
         <div class="section-container">

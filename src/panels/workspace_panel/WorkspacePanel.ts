@@ -456,6 +456,11 @@ export class WorkspacePanel {
   private webviewReady = false;
   private pendingModulesTab = false;
 
+  public showWorkspaceInfo() {
+    this.pendingModulesTab = false;
+    if (this.webviewReady) { void this._panel.postMessage({ command: "showWorkspaceInfo" }); }
+  }
+
   public showWestModules() {
     this.pendingModulesTab = true;
     if (this.webviewReady) {

@@ -23,7 +23,7 @@ suite("Zephyr sidebar navigation", () => {
     try {
       await openSidebarAndWaitForSettings();
       const originalTab = settingsTabs()[0];
-      for (const command of ["open-setup-panel", "open-host-tools-panel", "open-sdk-panel",
+      for (const command of ["open-project-build-panel", "open-zephyr-ide-manager", "open-setup-panel", "open-host-tools-panel", "open-sdk-panel",
         "open-workspace-panel", "select-west-modules", "open-runner-profile-panel", "open-settings-panel"]) {
         await vscode.commands.executeCommand("zephyr-ide." + command);
         assert.strictEqual(settingsTabs()[0], originalTab);

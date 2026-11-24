@@ -851,7 +851,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const opening = visible && !sidebarVisible;
     sidebarVisible = visible;
     if (opening) {
-      SettingsPanel.createOrShow(context.extensionPath);
+      ProjectBuildPanel.createOrShow(context.extensionPath, context, wsConfig, globalConfig, wsConfig.activeProject);
     }
   };
   for (const view of sidebarViews) {
@@ -2471,7 +2471,7 @@ export async function activate(context: vscode.ExtensionContext) {
         context,
         wsConfig,
         globalConfig
-      );
+      ).showWorkspaceInfo();
     })
   );
 
