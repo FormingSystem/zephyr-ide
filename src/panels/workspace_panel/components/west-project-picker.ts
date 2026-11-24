@@ -44,14 +44,14 @@ export class WestProjectPicker extends ZephyrLitElement {
   @state() private editing?: WestProject;
 
   private get position() {
-    return (this.vscodeApi.getState() as { picker?: PickerPosition } | undefined)?.picker;
+    return this.readState<PickerPosition>("picker");
   }
 
   private remember = () => {
     if (!this.catalog) { return; }
     const scroll = Array.from(this.querySelectorAll(".west-pane-list"), el => el.scrollTop);
     const picker = { scope: this.catalog.scope, query: this.query, regex: this.regex, scroll };
-    this.vscodeApi.setState({ ...this.vscodeApi.getState() as object, picker });
+    this.saveState("picker", picker);
   };
 
   connectedCallback() {

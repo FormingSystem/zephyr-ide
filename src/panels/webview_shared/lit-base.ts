@@ -37,6 +37,16 @@ export class ZephyrLitElement extends LitElement {
     return this;
   }
 
+  protected readState<T>(key: string): T | undefined {
+    const state = this.vscodeApi.getState() as Record<string, unknown> | undefined;
+    return state?.[key] as T | undefined;
+  }
+
+  protected saveState<T>(key: string, value: T): void {
+    const state = this.vscodeApi.getState() as Record<string, unknown> | undefined;
+    this.vscodeApi.setState({ ...state, [key]: value });
+  }
+
   /** Send a command message to the extension host. */
   protected postCommand(command: string, data: Record<string, string> = {}): void {
     this.vscodeApi.postMessage({ command, ...data });

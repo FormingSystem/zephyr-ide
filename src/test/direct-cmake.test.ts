@@ -15,7 +15,13 @@ suite("Direct CMake configuration", () => {
   test("a build directory belongs to its cached application", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "zide-cache-"));
     try {
+      assert.strictEqual(describeCMake({ source: dir, binary: dir }).hasApplication, false);
+      await fs.writeFile(path.join(dir, "CMakeLists.txt"), "project(test)");
+      assert.strictEqual(describeCMake({ source: dir, binary: dir }).hasApplication, true);
       await fs.writeFile(path.join(dir, "CMakeCache.txt"), "CMAKE_HOME_DIRECTORY:INTERNAL=" + dir + "\n");
+      assert.strictEqual(describeCMake({ source: dir, binary: dir }).configured, false);
+      await fs.mkdir(path.join(dir, "CMakeFiles"));
+      await fs.writeFile(path.join(dir, "CMakeFiles", "TargetDirectories.txt"), "app");
       assert.strictEqual(describeCMake({ source: dir, binary: dir }).configured, true);
       assert.strictEqual(describeCMake({ source: path.join(dir, "other"), binary: dir }).configured, false);
     } finally { await fs.rm(dir, { recursive: true, force: true }); }

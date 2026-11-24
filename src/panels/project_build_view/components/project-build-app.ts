@@ -80,11 +80,23 @@ export class ProjectBuildApp extends ZephyrLitElement {
     this.postCommand("switchBuildOrTest", { selection: select.value });
   }
 
-  @state() private buildMethod = (this.vscodeApi.getState() as { buildMethod?: "CMake" | "west" } | undefined)?.buildMethod;
+  @state() private buildMethod = this.readState<"CMake" | "west">("buildMethod");
 
   private selectMethod(method: "CMake" | "west") {
     this.buildMethod = method;
-    this.vscodeApi.setState({ ...this.vscodeApi.getState() as object, buildMethod: method });
+    this.saveState("buildMethod", method);
+  }
+
+  private renderSelector(label: string, options: ProjectBuildPanelData["buildTestOptions"], onChange: (event: Event) => void) {
+    if (!options.length) { return nothing; }
+    return html`<div class="project-selector">
+      <span>${label}</span>
+      <vscode-single-select aria-label=${label} @change=${onChange}>
+        ${options.map(option => html`<vscode-option value=${option.value} ?selected=${option.selected}>
+          ${option.label}
+        </vscode-option>`)}
+      </vscode-single-select>
+    </div>`;
   }
 
   render() {
@@ -94,7 +106,7 @@ export class ProjectBuildApp extends ZephyrLitElement {
 
     const d = this._data;
     const direct = (this.buildMethod ?? (d.hasWestWorkspace ? "west" : "CMake")) === "CMake";
-    const hasBuildTestOptions = d.buildTestOptions.length > 0;
+    const projects = d.projectOptions.map(({ name, selected }) => ({ value: name, label: name, selected }));
 
     return html`
       <div class="container panel-container">
@@ -104,32 +116,16 @@ export class ProjectBuildApp extends ZephyrLitElement {
             <h1 class="page-title"><i class="codicon codicon-project"></i> ${panelText("Project Details")}</h1>
           </div>
           <div class="page-header-selectors">
-            ${d.projectOptions.length ? html`<div class="project-selector">
-              <label>${panelText("Project:")}</label>
-              <vscode-single-select @change=${this._onProjectChange}>
-                ${d.projectOptions.map(
-      (opt) => html`<vscode-option value=${opt.name} ?selected=${opt.selected}>${opt.name}</vscode-option>`,
-    )}
-              </vscode-single-select>
-            </div>` : nothing}
-            ${hasBuildTestOptions
-        ? html`
-                  <div class="build-test-selector">
-                    <label>${panelText("Build / Test:")}</label>
-                    <vscode-single-select @change=${this._onBuildTestChange}>
-                      ${d.buildTestOptions.map(
-          (opt) => html`<vscode-option value=${opt.value} ?selected=${opt.selected}>${opt.label}</vscode-option>`,
-        )}
-                    </vscode-single-select>
-                  </div>
-                `
-        : nothing}
+            ${this.renderSelector(panelText("Project:"), projects, this._onProjectChange)}
+            ${this.renderSelector(panelText("Build / Test:"), d.buildTestOptions, this._onBuildTestChange)}
           </div>
         </div>
 
         <div class="workbench-method" role="group" aria-label=${panelText("Build method")}>
-          ${(["CMake", "west"] as const).map(method => html`<button aria-pressed=${direct === (method === "CMake")}
-            @click=${() => this.selectMethod(method)}>${method}</button>`)}
+          <div class="method-options">
+            ${(["CMake", "west"] as const).map(method => html`<button aria-pressed=${direct === (method === "CMake")}
+              @click=${() => this.selectMethod(method)}>${method}</button>`)}
+          </div>
           <vscode-button secondary @click=${() => this.postCommand("openGuide")}>${panelText("Workbench guide")}</vscode-button>
         </div>
         ${direct ? keyed(JSON.stringify([d.cmake.source, d.cmake.binary]), html`<cmake-section .data=${d.cmake} .busy=${!!this._activeBuildAction}></cmake-section>`) : this.renderWest(d)}
@@ -137,89 +133,41 @@ export class ProjectBuildApp extends ZephyrLitElement {
   }
 
   private renderWest(d: ProjectBuildPanelData) {
-    const hasProjects = d.projectOptions.length > 0;
-    const hasBuild = !!d.buildDetails;
-    const hasTest = !!d.testDetails;
-    const noBuildOrTest = !hasBuild && !hasTest;
-    return html`${!hasProjects
-        ? html`
-              <div class="no-project-notice">
-                <i class="codicon codicon-info"></i>
-                <p>${panelText("Choose an application folder or start from a Zephyr sample.")}</p>
-                <vscode-button @click=${() => this.postCommand("addProject")}>${panelText("Add Project")}</vscode-button>
-              </div>
-            `
-        : html`
-              ${d.projectInfo
-            ? html`<project-section
-                    .projectInfo=${d.projectInfo}
-                    .projectVars=${d.projectVars}
-                    .variableCommands=${d.variableCommands}
-                  ></project-section>`
-            : nothing}
+    if (!d.projectOptions.length) {
+      return html`<div class="no-project-notice">
+        <i class="codicon codicon-info"></i>
+        <p>${panelText("Choose an application folder or start from a Zephyr sample.")}</p>
+        <vscode-button @click=${() => this.postCommand("addProject")}>${panelText("Add Project")}</vscode-button>
+      </div>`;
+    }
 
-              ${d.selectedProject
-            ? html`
-                    <div class="project-actions-row">
-                      <vscode-button appearance="secondary" icon="add"
-                        @click=${() => this.postCommand("addBuild", { project: d.selectedProject! })}>
-                        ${panelText("Add Build")}
-                      </vscode-button>
-                      <vscode-button appearance="secondary" icon="beaker"
-                        @click=${() => this.postCommand("addTest", { project: d.selectedProject! })}>
-                        ${panelText("Add Test")}
-                      </vscode-button>
-                    </div>
-                  `
-            : nothing}
+    return html`
+      ${d.projectInfo ? html`<project-section .projectInfo=${d.projectInfo} .projectVars=${d.projectVars}
+        .variableCommands=${d.variableCommands}></project-section>` : nothing}
+      ${d.selectedProject ? this.renderProjectActions(d.selectedProject) : nothing}
+      ${d.buildDetails ? html`<build-section .buildDetails=${d.buildDetails} .buildVars=${d.buildVars}
+        .isActive=${d.isBuildActive} .projectName=${d.selectedProject} .variableCommands=${d.variableCommands}
+        .activeAction=${this._activeBuildAction}></build-section>` : nothing}
+      ${d.testDetails ? html`<test-section .testDetails=${d.testDetails}></test-section>` : nothing}
+      ${!d.buildDetails && !d.testDetails && d.selectedProject
+        ? this.renderBuildHint(d.buildTestOptions.length > 0) : nothing}`;
+  }
 
-              ${hasBuild
-            ? html`<build-section
-                    .buildDetails=${d.buildDetails!}
-                    .buildVars=${d.buildVars}
-                    .isActive=${d.isBuildActive}
-                    .projectName=${d.selectedProject!}
-                    .variableCommands=${d.variableCommands}
-                    .activeAction=${this._activeBuildAction}
-                  ></build-section>`
-            : nothing}
+  private renderProjectActions(project: string) {
+    return html`<div class="project-actions-row">
+      <vscode-button appearance="secondary" icon="add" @click=${() => this.postCommand("addBuild", { project })}>
+        ${panelText("Add Build")}
+      </vscode-button>
+      <vscode-button appearance="secondary" icon="beaker" @click=${() => this.postCommand("addTest", { project })}>
+        ${panelText("Add Test")}
+      </vscode-button>
+    </div>`;
+  }
 
-              ${hasTest
-            ? html`<test-section .testDetails=${d.testDetails!}></test-section>`
-            : nothing}
-
-              ${noBuildOrTest && d.selectedProject && d.buildTestOptions.length === 0
-            ? html`
-                    <div class="build-placeholder">
-                      <div class="build-placeholder-content">
-                        <i class="codicon codicon-add"></i>
-                        <p>${panelText("No builds or tests configured yet.")}</p>
-                        <div class="build-placeholder-actions">
-                          <vscode-button icon="add"
-                            @click=${() => this.postCommand("addBuild", { project: d.selectedProject! })}>
-                            ${panelText("Add Build")}
-                          </vscode-button>
-                          <vscode-button appearance="secondary" icon="beaker"
-                            @click=${() => this.postCommand("addTest", { project: d.selectedProject! })}>
-                            ${panelText("Add Test")}
-                          </vscode-button>
-                        </div>
-                      </div>
-                    </div>
-                  `
-            : nothing}
-
-              ${noBuildOrTest && d.selectedProject && d.buildTestOptions.length > 0
-            ? html`
-                    <div class="build-placeholder">
-                      <div class="build-placeholder-content">
-                        <i class="codicon codicon-arrow-left"></i>
-                        <p>${panelText("Select a build or test to view details.")}</p>
-                      </div>
-                    </div>
-                  `
-            : nothing}
-            `}
-    `;
+  private renderBuildHint(hasOptions: boolean) {
+    return html`<div class="build-placeholder"><div class="build-placeholder-content">
+      <i class=${hasOptions ? "codicon codicon-arrow-left" : "codicon codicon-add"}></i>
+      <p>${hasOptions ? panelText("Select a build or test to view details.") : panelText("No builds or tests configured yet.")}</p>
+    </div></div>`;
   }
 }

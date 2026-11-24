@@ -161,6 +161,9 @@ export interface ProjectBuildPanelData {
   cmake: {
     source: string;
     binary: string;
+    sourceLabel: string;
+    binaryLabel: string;
+    hasApplication: boolean;
     configured: boolean;
     defaults: string;
     variables: { name: string; value: string; origin: string }[];

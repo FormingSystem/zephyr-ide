@@ -1491,5 +1491,7 @@
   "This build does not provide the {0} target.": "此构建未提供 {0} 目标。",
   "When disabled, project selection only detects modules. Use Download to fetch them.": "关闭后，选择工程时仅识别模块，可点击下载获取所需组件。",
   "Workbench guide": "工作台使用手册",
-  "Zephyr IDE": "Zephyr IDE"
+  "Zephyr IDE": "Zephyr IDE",
+  "Browse: {0}": "浏览{0}",
+  "Choose an application directory containing CMakeLists.txt to enable Configure.": "请选择包含 CMakeLists.txt 的应用目录，即可开始配置。"
 }

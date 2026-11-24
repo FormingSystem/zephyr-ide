@@ -44,9 +44,9 @@ export class BuildSection extends ZephyrLitElement {
 
   private _loadExpandedState(): Record<string, boolean> {
     try {
-      const raw = (this.vscodeApi.getState() as { expandedSections?: Record<string, boolean> } | undefined);
-      if (raw && typeof raw.expandedSections === "object") {
-        return { config: true, ...raw.expandedSections };
+      const saved = this.readState<Record<string, boolean>>("expandedSections");
+      if (saved) {
+        return { config: true, ...saved };
       }
     } catch { /* ignore */ }
     return { config: true };
@@ -54,8 +54,7 @@ export class BuildSection extends ZephyrLitElement {
 
   private _persistExpandedState() {
     try {
-      const prev = (this.vscodeApi.getState() as Record<string, unknown> | undefined) ?? {};
-      this.vscodeApi.setState({ ...prev, expandedSections: this._expandedSections });
+      this.saveState("expandedSections", this._expandedSections);
     } catch { /* ignore */ }
   }
 

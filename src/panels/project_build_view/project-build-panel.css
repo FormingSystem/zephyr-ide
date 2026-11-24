@@ -33,7 +33,7 @@
   gap: 8px;
 }
 
-.project-selector label {
+.project-selector > span {
   font-weight: 600;
   white-space: nowrap;
   font-size: 12px;
@@ -42,22 +42,6 @@
 
 .project-selector select,
 .project-selector vscode-single-select {
-  min-width: 180px;
-}
-
-.build-test-selector {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.build-test-selector label {
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.build-test-selector select,
-.build-test-selector vscode-single-select {
   min-width: 180px;
 }
 
@@ -876,10 +860,6 @@
   font-size: 13px;
 }
 
-.build-placeholder-actions {
-  display: flex;
-  gap: 8px;
-}
 
 /* No project notice */
 .no-project-notice {
@@ -1202,35 +1182,60 @@ vscode-table-cell code {
   flex-wrap: wrap;
 }
 
-.workbench-method, .cmake-location {
+.panel-container > .page-header { margin-bottom: 8px; }
+
+.workbench-method {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  padding-block: 4px 12px;
 }
-
-.workbench-method { padding-block: 6px 12px; }
 .workbench-method vscode-button { margin-inline-start: auto; }
-.workbench-method button {
+
+.method-options {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--zephyr-webview-radius);
+}
+.method-options button {
   font: inherit;
   border-radius: 4px;
   padding: 4px 12px;
   cursor: pointer;
-  color: var(--vscode-button-secondaryForeground);
-  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-foreground);
+  background: transparent;
   border: 1px solid transparent;
 }
-.workbench-method button:hover { background: var(--vscode-button-secondaryHoverBackground); }
-.workbench-method button[aria-pressed="true"] { border-color: var(--vscode-focusBorder); }
+.method-options button:hover { background: var(--vscode-toolbar-hoverBackground); }
+.method-options button[aria-pressed="true"] {
+  color: var(--vscode-inputOption-activeForeground, var(--vscode-foreground));
+  background: var(--vscode-inputOption-activeBackground);
+  border-color: var(--vscode-inputOption-activeBorder, var(--vscode-focusBorder));
+}
 
 .cmake-section {
   padding: clamp(8px, 1.4vw, 16px);
   border: 1px solid var(--vscode-panel-border);
   border-radius: var(--zephyr-webview-radius);
 }
-.cmake-location { margin-bottom: 8px; }
-.cmake-location strong { flex: 0 0 10em; }
-.cmake-location code { overflow-wrap: anywhere; flex: 1; min-width: 8em; }
+.cmake-location {
+  display: grid;
+  grid-template-columns: 10em minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: 8px;
+}
+.cmake-location code { overflow-wrap: anywhere; }
+.cmake-hint { color: var(--vscode-descriptionForeground); }
+@media (max-width: 520px) {
+  .cmake-location { grid-template-columns: minmax(0, 1fr) auto; }
+  .cmake-location strong { grid-column: 1 / -1; }
+  .page-header-selectors, .project-selector { max-width: 100%; flex-wrap: wrap; }
+  .project-selector vscode-single-select { min-width: 0; max-width: 100%; }
+}
 .cmake-section details { margin-block: 12px; }
 .cmake-section summary { cursor: pointer; font-weight: 600; }
 .cmake-section details[open] summary { margin-bottom: 8px; }
