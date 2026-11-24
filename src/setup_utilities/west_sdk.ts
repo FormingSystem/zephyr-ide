@@ -23,7 +23,7 @@ import * as nativePath from "path";
 import * as fs from "fs-extra";
 import * as https from "https";
 import * as http from "http";
-import * as crypto from "crypto";
+import { computeSha256 } from "../utilities/file-digest";
 import * as os from "os";
 import * as cp from "child_process";
 
@@ -454,16 +454,6 @@ async function runSdkSetup(
 // ---------------------------------------------------------------------------
 // SHA-256 verification
 // ---------------------------------------------------------------------------
-
-async function computeSha256(filePath: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const hash = crypto.createHash("sha256");
-        const stream = fs.createReadStream(filePath);
-        stream.on("data", (chunk: Buffer) => hash.update(chunk));
-        stream.on("end", () => resolve(hash.digest("hex")));
-        stream.on("error", reject);
-    });
-}
 
 function parseSha256File(content: string, filename: string): string | undefined {
     for (const line of content.split("\n")) {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-import { promises as fs, createReadStream } from "fs";
-import { createHash, randomUUID } from "crypto";
+import { promises as fs } from "fs";
+import { computeSha256 } from "../utilities/file-digest";
+import { randomUUID } from "crypto";
 import * as path from "path";
 import * as vscode from "vscode";
 import { executeShellCommandInPythonEnv } from "../utilities/utils";
@@ -13,9 +14,7 @@ export async function copyVerifiedBlob(source: string, destination: string, dige
   const temporary = path.join(parent, ".blob-" + randomUUID());
   try {
     await fs.copyFile(source, temporary);
-    const hash = createHash("sha256");
-    for await (const chunk of createReadStream(temporary)) { hash.update(chunk); }
-    if (hash.digest("hex") !== digest.toLowerCase()) {
+    if (await computeSha256(temporary) !== digest.toLowerCase()) {
       throw Error(vscode.l10n.t("The selected file does not match the declared SHA-256."));
     }
     await fs.rename(temporary, destination);
