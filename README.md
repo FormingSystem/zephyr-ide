@@ -8,6 +8,10 @@ Works with nRF Connect SDK (NCS), plain Zephyr, or any `west`-based manifest. Al
 
 Install from the [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=mylonics.zephyr-ide) or the [Open VSX Registry](https://open-vsx.org/extension/mylonics/zephyr-ide). An extension pack is also available on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=mylonics.zephyr-ide-extension-pack) and [Open VSX](https://open-vsx.org/extension/mylonics/zephyr-ide-extension-pack), bundling Cortex-Debug, C/C++, Serial Monitor, Devicetree LSP, and CMake support.
 
+## Workbench edition
+
+[Workbench guide](resources/workbench.md) · [工作台使用手册](resources/workbench.zh-cn.md) · [需求与验收记录](docs/design/zephyr-ide-workbench.zh-cn.md) · [Upstream attribution and fork history](NOTICE)
+
 *Formerly known as Zephyr IDE.*
 
 You can read about the motivation behind the project [here](https://mylonics.com/blog/zephyr-ide/).

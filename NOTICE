@@ -1,0 +1,14 @@
+Zephyr IDE workbench distribution
+
+Upstream project: IDE for Zephyr, https://github.com/mylonics/zephyr-ide
+Upstream copyright notices are retained in LICENSE.md and the source files.
+This distribution includes modifications by contributors to the FormingSystem
+fork, distributed under the Apache License, Version 2.0. Individual authors
+and the scope of their changes are identified in the Git history.
+
+Shared upstream commit: ec68f49d0fb94ab3fa5650cf412af700c3c9e08f
+First fork change after that commit: 57506add0676bca093417620f91e51ba521eecd7
+Base for the workbench changes on single-panel-configuration:
+f6eab74156d0103377269392ea4cea1e74d6787d
+
+本发行版保留上游版权及作者署名。上述节点分别记录共同上游版本、分支的首笔改动和本次工作台改版的起点。各项修改的作者及范围以 Git 历史为准。

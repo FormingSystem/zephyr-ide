@@ -1,0 +1,33 @@
+# Using the Zephyr IDE workbench
+
+[简体中文](workbench.zh-cn.md)
+
+Open Zephyr IDE from the Activity Bar. Choose the build method in Project configuration. The project, tool environment and extension settings share an editor. The task terminal shows the command and diagnostic output.
+
+## Select an application, board and CPU
+
+1. For a west workspace, add an existing project or copy a Zephyr sample. Add a build configuration and choose a board, including the SoC, CPU cluster or variant supplied by the board. For a standalone application, choose **CMake → Application (-S) → Browse** and select the directory containing the application’s CMakeLists.txt. Zephyr’s `samples/hello_world` is a small first build.
+2. Assign each board and CPU target its own build directory (-B). In CMake mode enter one definition per line, for example `BOARD=nrf5340dk/nrf5340/cpuapp`. Use the full target name supported by your Zephyr checkout. For an out-of-tree board set `BOARD_ROOT` to the directory containing `boards`. You can also select an existing configured build directory.
+3. Choose **Configure**, then **Build**. Inspect CMakeCache.txt for the effective board, toolchain and options. A typical debug image is `zephyr/zephyr.elf` inside the build directory.
+
+## Configure a device and its driver
+
+Enable the actual board device node in a devicetree overlay and configure its pins or bus. Select the overlay with `DTC_OVERLAY_FILE`. Enable the driver subsystem in prj.conf, for example `CONFIG_I2C=y`. Use `CONF_FILE` for the main configuration and `EXTRA_CONF_FILE` for additional fragments. After configuring, open **Kconfig · menuconfig**, press `/` to search for a symbol and inspect its dependencies. Record desired settings in the application configuration and reconfigure to reproduce them in a clean build. Inspect `zephyr/.config` and `zephyr/zephyr.dts` for the effective software and hardware configuration.
+
+## Use existing tools and offline components
+
+Open **Tool environment → Host tools → Local tool environment**. Prepend executable directories to `PATH` using semicolons on Windows or colons on Linux. Set `ZEPHYR_BASE` to the Zephyr source directory and `ZEPHYR_SDK_INSTALL_DIR` to an unpacked SDK. The SDK page also accepts a local distribution bundle or an HTTPS archive URL. Check the target architecture’s compiler is present. For another toolchain, set `ZEPHYR_TOOLCHAIN_VARIANT` and any prefix required by that toolchain.
+
+For Python wheels matching your OS and interpreter, set `PIP_FIND_LINKS` to the local directory and `PIP_NO_INDEX=1`. Use Git’s `url.<base>.insteadOf` to route a manifest URL to a local mirror. Set `GIT_ALLOW_PROTOCOL=file` to restrict Git to local file transport. To build from separately unpacked modules in CMake, supply `ZEPHYR_MODULES` as a semicolon-separated list of module directories. Supply the Python packages, compiler, sources and firmware files that the chosen application requires.
+
+## Inspect dependencies and revisions
+
+Open **west Git modules** to inspect the reason for a selection, the manifest revision and local checkout status. Search by part of a module name. Selected and available modules appear in separate lists. Download or update one row, or act on the selected group. Enter one repository address per line when adding repositories. Choose **Check for updates** for remote revision information. For moving references such as branches, matching the last known revision only describes the last check. The west manifest describes Git projects and a module’s `zephyr/module.yml` describes its binary blobs.
+
+Use **Project requirements → Import local blob** to select a declared firmware file and import a local copy. The workbench compares its SHA-256 before replacing the destination.
+
+## Flash and debug
+
+With west, select the build and runner. With CMake, choose a generated target such as `flash`, `debug` or `debugserver` if the build provides it. Some targets invoke a west runner internally. Vendor tools and debug adapters can also run independently. Choose **VS Code · launch.json** for a launch configuration targeting your ELF and probe. Actual target and probe support depends on the hardware, tools and Zephyr checkout.
+
+[Applications and CMake](https://docs.zephyrproject.org/latest/develop/application/index.html) · [Modules and blobs](https://docs.zephyrproject.org/latest/develop/modules.html) · [SDK](https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html) · [Build, flash and debug](https://docs.zephyrproject.org/latest/develop/west/build-flash-debug.html)
