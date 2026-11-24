@@ -28,6 +28,7 @@ import { hasInstalledToolchains } from "../../../utilities/sdk-install-state";
 interface SDKVersion {
   version?: string;
   path?: string;
+  external?: boolean;
   installedToolchains?: string[];
   availableToolchains?: string[];
 }
@@ -299,6 +300,8 @@ export class SDKApp extends ZephyrLitElement {
             <span class="header-status-badge ${statusClass}">${statusIcon} ${statusLabel}</span>
           </div>
           <div class="header-actions">
+            <vscode-button secondary @click=${() => this.postCommand("importSDK")}>${panelText("Import local SDK bundle")}</vscode-button>
+            <vscode-button secondary @click=${() => this.postCommand("importSDK", { remote: "yes" })}>${panelText("SDK archive URL")}</vscode-button>
             <vscode-button ?disabled=${this._buttonsDisabled} @click=${() => this._installSDK()}>
               <vscode-icon slot="start-icon" name="cloud-download"></vscode-icon>
               ${panelText("Install / Update")}
@@ -438,6 +441,11 @@ export class SDKApp extends ZephyrLitElement {
   private _renderSDKVersion(version: SDKVersion) {
     const ver = version.version ?? "Unknown";
     const installed = version.installedToolchains ?? [];
+    if (version.external) {
+      return html`<section class="sdk-version-card"><h3>Zephyr SDK ${ver}</h3>
+        <p><code>ZEPHYR_SDK_INSTALL_DIR</code> · ${version.path}</p>
+        <p>${panelText("Installed toolchains")}: ${installed.join(", ") || "—"}</p></section>`;
+    }
     const available = version.availableToolchains ?? [];
     const notInstalled = available.filter(tc => !installed.includes(tc));
     const total = installed.length + notInstalled.length;

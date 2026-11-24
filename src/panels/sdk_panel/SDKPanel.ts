@@ -22,6 +22,7 @@ import * as vscode from "vscode";
 import { WorkspaceConfig, GlobalConfig } from "../../setup_utilities/types";
 import {
   listAvailableSDKs,
+  importSDKArchive,
   ParsedSDKList,
   onSDKProgress,
   installSDKToolchainsInteractive,
@@ -179,6 +180,9 @@ export class SDKPanel {
           this.updateContent(this.currentWsConfig, this.currentGlobalConfig);
         }
         return;
+      case "importSDK":
+        void this.importSDK(message.remote === "yes");
+        return;
       case "installSDK":
         this.installSDK();
         return;
@@ -209,6 +213,25 @@ export class SDKPanel {
       case "openZephyrIDEManager":
         vscode.commands.executeCommand("zephyr-ide.open-zephyr-ide-manager");
         return;
+    }
+  }
+
+  private async importSDK(remote: boolean) {
+    const archive = remote
+      ? await vscode.window.showInputBox({ title: vscode.l10n.t("SDK archive URL"), placeHolder: "https://…" })
+      : (await vscode.window.showOpenDialog({ canSelectMany: false, title: vscode.l10n.t("Import local SDK bundle") }))?.[0]?.fsPath;
+    if (!archive || !vscode.workspace.isTrusted) { return; }
+    const digest = await vscode.window.showInputBox({
+      title: vscode.l10n.t("Archive SHA-256 (optional)"),
+      validateInput: value => !value.trim() || /^[a-f\d]{64}$/i.test(value.trim()) ? undefined : vscode.l10n.t("Enter a 64-character SHA-256 digest."),
+    });
+    if (digest === undefined) { return; }
+    try {
+      await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: vscode.l10n.t("Import SDK bundle") },
+        () => importSDKArchive(archive.trim(), remote, digest.trim()));
+      await this.listSDKs();
+    } catch (error) {
+      notifyError("SDK", String(error));
     }
   }
 

@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { localToolEnvironment } from "./tool-environment";
 import * as vscode from "vscode";
 import * as path from "upath";
 import { windows7ZipDirectory } from "../utilities/windows-7zip";
@@ -43,6 +44,7 @@ export const onSDKProgress: vscode.Event<import("./setup-progress").SetupProgres
 export interface ParsedSDKVersion {
     version: string;
     path: string;
+    external?: boolean;
     installedToolchains: string[];
     availableToolchains: string[];
 }
@@ -344,6 +346,42 @@ async function extractArchive(archivePath: string, outDir: string): Promise<void
 }
 
 // ---------------------------------------------------------------------------
+// Import a distribution bundle without invoking the SDK setup script, which
+// may fetch additional toolchains. Installed components are scanned afterwards.
+export async function importSDKArchive(archive: string, remote = false, digest?: string, parent = getToolchainDir()) {
+    await fs.ensureDir(parent);
+    const stage = await fs.mkdtemp(nativePath.join(parent, ".sdk-import-"));
+    try {
+        const incoming = nativePath.join(stage, "extracted");
+        await fs.mkdir(incoming);
+        if (remote) {
+            const url = new URL(archive);
+            if (url.protocol !== "https:") { throw Error(vscode.l10n.t("Enter an HTTPS archive URL.")); }
+            archive = nativePath.join(stage, nativePath.basename(url.pathname) || "sdk.archive");
+            await downloadFile(url.href, archive);
+        }
+        const platform = getSdkPlatform();
+        const advertised = /_(windows|linux|macos)-(x86_64|aarch64)/i.exec(nativePath.basename(archive));
+        if (advertised && (advertised[1] !== platform.osname || advertised[2] !== platform.arch)) {
+            throw Error(vscode.l10n.t("This SDK archive targets a different host platform."));
+        }
+        if (digest && (await computeSha256(archive)) !== digest.toLowerCase()) {
+            throw Error(vscode.l10n.t("The selected file does not match the declared SHA-256."));
+        }
+        await extractArchive(archive, incoming);
+        const roots = await fs.readdir(incoming, { withFileTypes: true });
+        const root = roots.find(entry => entry.isDirectory() && /^zephyr-sdk-[\d.]+$/.test(entry.name));
+        if (!root || roots.length !== 1) { throw Error(vscode.l10n.t("Expected a Zephyr SDK distribution bundle.")); }
+        const source = nativePath.join(incoming, root.name);
+        const version = (await fs.readFile(nativePath.join(source, "sdk_version"), "utf8")).trim();
+        if (root.name !== "zephyr-sdk-" + version) { throw Error(vscode.l10n.t("SDK version and directory name differ.")); }
+        await fs.move(source, nativePath.join(parent, root.name), { overwrite: false });
+    } finally {
+        await fs.remove(stage);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // SDK setup script
 // ---------------------------------------------------------------------------
 
@@ -448,16 +486,16 @@ function parseSha256File(content: string, filename: string): string | undefined 
 export async function listAvailableSDKs(): Promise<ParsedSDKList> {
     try {
         const toolchainsDir = getToolchainDir();
-        if (!(await fs.pathExists(toolchainsDir))) {
-            return { success: true, versions: [] };
-        }
-
-        const entries = await fs.readdir(toolchainsDir);
-        const sdkDirs = entries.filter(e => e.startsWith("zephyr-sdk-"));
+        const directories = await fs.pathExists(toolchainsDir) ? await fs.readdir(toolchainsDir) : [];
+        const sdkPaths = directories.filter(name => name.startsWith("zephyr-sdk-"))
+            .map(name => nativePath.resolve(toolchainsDir, name));
+        const configured = localToolEnvironment().ZEPHYR_SDK_INSTALL_DIR ?? process.env.ZEPHYR_SDK_INSTALL_DIR;
+        const external = configured && !sdkPaths.some(p => nativePath.relative(p, configured) === "")
+            ? nativePath.resolve(configured) : undefined;
+        if (external) { sdkPaths.push(external); }
         const versions: ParsedSDKVersion[] = [];
 
-        for (const dir of sdkDirs) {
-            const sdkPath = path.join(toolchainsDir, dir);
+        for (const sdkPath of sdkPaths) {
             const versionFile = path.join(sdkPath, "sdk_version");
             if (!(await fs.pathExists(versionFile))) { continue; }
 
@@ -496,7 +534,7 @@ export async function listAvailableSDKs(): Promise<ParsedSDKList> {
                 }
             }
 
-            versions.push({ version, path: sdkPath, installedToolchains: installed, availableToolchains: available });
+            versions.push({ version, path: sdkPath, external: sdkPath === external, installedToolchains: installed, availableToolchains: available });
         }
 
         return { success: true, versions };

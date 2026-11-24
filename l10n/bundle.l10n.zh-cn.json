@@ -1452,5 +1452,16 @@
   "Only additional projects in this manifest can be removed.": "此清单只允许移除额外添加的模块。",
   "Local tool environment": "本机工具环境",
   "Set this variable for extension commands. Clear it to inherit the environment.": "为扩展执行的命令设置此变量。清空后继承系统环境。",
-  "Zephyr IDE": "Zephyr IDE"
+  "Zephyr IDE": "Zephyr IDE",
+  "Archive SHA-256 (optional)": "安装包 SHA-256（可选）",
+  "Enter a 64-character SHA-256 digest.": "请输入 64 位十六进制 SHA-256 校验值。",
+  "Enter an HTTPS archive URL.": "请输入 HTTPS 安装包地址。",
+  "Expected a Zephyr SDK distribution bundle.": "请选择 Zephyr SDK 发行包。",
+  "Import SDK bundle": "导入 SDK 安装包",
+  "Import local SDK bundle": "导入本地 SDK 安装包",
+  "Installed toolchains": "已安装的工具链",
+  "SDK archive URL": "SDK 安装包地址",
+  "SDK version and directory name differ.": "SDK 版本与目录名称不一致。",
+  "The selected file does not match the declared SHA-256.": "所选文件与声明的 SHA-256 校验值不一致。",
+  "This SDK archive targets a different host platform.": "此 SDK 安装包适用于其他主机平台。"
 }
