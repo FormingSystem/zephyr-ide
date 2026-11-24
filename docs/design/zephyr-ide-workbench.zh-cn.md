@@ -135,3 +135,5 @@
 | 待实机验证 | Linux 原生桌面、真实探针的烧录和交互调试需要对应环境。极端缩放、供应商自定义 runner、外部工具链及各版本 SDK 包的支持范围仍以相应工程实测为准。 |
 
 复核入口：`npm run compile`、`npm run lint`、`npm run esbuild`、`npx vscode-test --label unit`。在已安装 west 与 PyYAML 的解释器中运行 `python -m unittest discover -s src/test -p "test_west*.py"`，可使用临时本地 Git 仓库复核依赖识别。真实构建需要测试者提供对应的板、模块与编译器。
+
+[工作台功能、视觉与代码复核记录](workbench-review.zh-cn.md)列出了预览版交付后复现的问题、修复和复测范围。

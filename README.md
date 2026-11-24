@@ -12,6 +12,8 @@ Install from the [Visual Studio Code Marketplace](https://marketplace.visualstud
 
 [Workbench guide](resources/workbench.md) · [工作台使用手册](resources/workbench.zh-cn.md) · [需求与验收记录](docs/design/zephyr-ide-workbench.zh-cn.md) · [Upstream attribution and fork history](NOTICE)
 
+[Workbench review](docs/design/workbench-review.md) · [工作台评审记录](docs/design/workbench-review.zh-cn.md)
+
 *Formerly known as Zephyr IDE.*
 
 You can read about the motivation behind the project [here](https://mylonics.com/blog/zephyr-ide/).

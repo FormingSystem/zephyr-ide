@@ -10,6 +10,10 @@ Open Zephyr IDE from the Activity Bar. Choose the build method in Project config
 2. Assign each board and CPU target its own build directory (-B). In CMake mode enter one definition per line, for example `BOARD=nrf5340dk/nrf5340/cpuapp`. Use the full target name supported by your Zephyr checkout. For an out-of-tree board set `BOARD_ROOT` to the directory containing `boards`. You can also select an existing configured build directory.
 3. Choose **Configure**, then **Build**. Inspect CMakeCache.txt for the effective board, toolchain and options. A typical debug image is `zephyr/zephyr.elf` inside the build directory.
 
+**Try switching build methods.** In an empty folder the CMake page explains which file it needs. Choose an application containing `CMakeLists.txt`, enter `BOARD` and `CONF_FILE`, switch to west, then return to CMake. Both lines should still be there. Each application and build directory has its own draft in this editor. Hover over a directory to see its full path. On Windows, forward slashes work in CMake definitions, including paths to your Python executable.
+
+![Switch from CMake to west and back with the board and configuration file retained.](media/workbench-cmake.en.gif)
+
 ## Configure a device and its driver
 
 Enable the actual board device node in a devicetree overlay and configure its pins or bus. Select the overlay with `DTC_OVERLAY_FILE`. Enable the driver subsystem in prj.conf, for example `CONFIG_I2C=y`. Use `CONF_FILE` for the main configuration and `EXTRA_CONF_FILE` for additional fragments. After configuring, open **Kconfig · menuconfig**, press `/` to search for a symbol and inspect its dependencies. Record desired settings in the application configuration and reconfigure to reproduce them in a clean build. Inspect `zephyr/.config` and `zephyr/zephyr.dts` for the effective software and hardware configuration.
@@ -23,6 +27,10 @@ For Python wheels matching your OS and interpreter, set `PIP_FIND_LINKS` to the 
 ## Inspect dependencies and revisions
 
 Open **west Git modules** to inspect the reason for a selection, the manifest revision and local checkout status. Search by part of a module name. Selected and available modules appear in separate lists. Download or update one row, or act on the selected group. Enter one repository address per line when adding repositories. Choose **Check for updates** for remote revision information. For moving references such as branches, matching the last known revision only describes the last check. The west manifest describes Git projects and a module’s `zephyr/module.yml` describes its binary blobs.
+
+**Try the filter before downloading.** Enter `cms` and select `cmsis_6` if your manifest includes it. Change the filter to `hstm32`. The upper list still shows the selected revision. The row button acts on that module and the header button acts on the entire selection. Selecting a checkbox here queues the module for the group action.
+
+![Filter the manifest, select cmsis_6 and change the search with the selected module still visible.](media/workbench-modules.en.gif)
 
 Use **Project requirements → Import local blob** to select a declared firmware file and import a local copy. The workbench compares its SHA-256 before replacing the destination.
 
