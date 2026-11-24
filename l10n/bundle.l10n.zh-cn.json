@@ -1463,5 +1463,8 @@
   "SDK archive URL": "SDK 安装包地址",
   "SDK version and directory name differ.": "SDK 版本与目录名称不一致。",
   "The selected file does not match the declared SHA-256.": "所选文件与声明的 SHA-256 校验值不一致。",
-  "This SDK archive targets a different host platform.": "此 SDK 安装包适用于其他主机平台。"
+  "This SDK archive targets a different host platform.": "此 SDK 安装包适用于其他主机平台。",
+  "All declared blobs match their checksums.": "所有已声明二进制文件的校验值均一致。",
+  "Import local blob": "导入本地二进制组件",
+  "Select the declared blob to import": "选择要导入的已声明二进制组件"
 }

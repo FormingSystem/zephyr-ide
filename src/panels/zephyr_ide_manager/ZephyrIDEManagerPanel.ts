@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { importLocalBlob } from "../../setup_utilities/local-blob";
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
 import { WorkspaceConfig, GlobalConfig } from "../../setup_utilities/types";
@@ -190,6 +191,13 @@ export class ZephyrIDEManagerPanel {
       case "installPipPackages":
         await vscode.commands.executeCommand("zephyr-ide.install-zephyr-ide-pip-packages-and-requirements");
         await this.refreshAll();
+        return;
+      case "importLocalBlob":
+        if (this.currentWsConfig) {
+          try { await importLocalBlob(this.currentWsConfig); }
+          catch (error) { notifyError("Zephyr IDE Blobs", String(error)); }
+          await this.listBlobs();
+        }
         return;
       case "modifyBlobs":
         await vscode.commands.executeCommand("zephyr-ide.modify-zephyr-ide-blobs");

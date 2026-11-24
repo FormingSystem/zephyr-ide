@@ -234,6 +234,7 @@ export class ZephyrIDEManagerApp extends ZephyrLitElement {
             <div class="manager-card-header">
               <h2 class="manager-title">${panelText("West Blobs")}</h2>
               <div class="manager-actions">
+                <vscode-button secondary @click=${() => this.postCommand("importLocalBlob")}>${panelText("Import local blob")}</vscode-button>
                 <vscode-button secondary @click=${() => this.postCommand("modifyBlobs")}>${panelText("Modify JSON List")}</vscode-button>
                 <vscode-button secondary @click=${() => this.postCommand("installBlobsFromJson")}>${panelText("Install from JSON")}</vscode-button>
                 <vscode-button ?disabled=${selectedCount === 0 || this._blobInstalling} @click=${() => this._installSelectedBlobs()}>

@@ -339,30 +339,28 @@ export async function listModulesWithBlobs(wsConfig: WorkspaceConfig, _context: 
     if (!setupState) { return []; }
 
     try {
-        // Format: {module}\t{status}\t{path} where status is usually "Fetched" or empty
-        // for modules that haven't been fetched yet.
         const res = await executeShellCommandInPythonEnv(
             `west blobs list -f "{module}\t{status}\t{path}"`,
-            setupState.setupPath,
-            setupState,
-            false,
+            setupState.setupPath, setupState, false,
         );
-        if (!res.stdout) { return []; }
-        const seen = new Set<string>();
-        const out: BlobModuleInfo[] = [];
-        for (const line of res.stdout.split(/\r?\n/)) {
-            const [moduleName, rawStatus = "", blobPath] = line.trim().split("\t");
-            if (!moduleName || seen.has(moduleName)) { continue; }
-            seen.add(moduleName);
-            const status = rawStatus.toLowerCase();
-            const isFetched = status === "fetched" || status === "y";
-            out.push({ moduleName, isFetched, path: blobPath || undefined });
-        }
-        return out;
+        return summarizeBlobStatus(res.stdout ?? "");
     } catch (error) {
         outputWarning("Zephyr IDE Blobs", `Failed to list available blobs: ${error}`);
         return [];
     }
+}
+
+export function summarizeBlobStatus(listing: string): BlobModuleInfo[] {
+    const modules = new Map<string, BlobModuleInfo>();
+    for (const line of listing.split(/\r?\n/)) {
+        const [moduleName, status, blobPath] = line.split("\t");
+        if (!moduleName || !blobPath) { continue; }
+        const current = modules.get(moduleName);
+        const present = ["a", "fetched", "y"].includes(status.trim().toLowerCase());
+        if (current) { current.isFetched &&= present; }
+        else { modules.set(moduleName, { moduleName, isFetched: present, path: blobPath.trim() }); }
+    }
+    return [...modules.values()];
 }
 
 /** Open the modify-blobs quick-pick and persist the result. */
