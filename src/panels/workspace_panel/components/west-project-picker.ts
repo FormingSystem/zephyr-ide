@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { html, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { isPinnedRevision, tracksRemoteRevision } from "../../../utilities/west-revision";
+import { isPinnedRevision } from "../../../utilities/west-revision";
 import { repositoryAddresses } from "../../../utilities/repository-addresses";
 import { live } from "lit/directives/live.js";
 import { ZephyrLitElement } from "../../webview_shared/lit-base";
@@ -23,6 +23,13 @@ export interface WestPickerData extends WestCatalog {
   added?: string[];
 }
 
+interface PickerPosition {
+  scope: string;
+  query: string;
+  regex: boolean;
+  scroll: number[];
+}
+
 @customElement("west-project-picker")
 export class WestProjectPicker extends ZephyrLitElement {
   @property({ attribute: false }) catalog?: WestPickerData;
@@ -34,8 +41,36 @@ export class WestProjectPicker extends ZephyrLitElement {
   @state() private discover = false;
   @state() private adding = false;
   @state() private lineCount = 0;
-  private lastCheckoutKey?: string;
   @state() private editing?: WestProject;
+
+  private get position() {
+    return (this.vscodeApi.getState() as { picker?: PickerPosition } | undefined)?.picker;
+  }
+
+  private remember = () => {
+    if (!this.catalog) { return; }
+    const scroll = Array.from(this.querySelectorAll(".west-pane-list"), el => el.scrollTop);
+    const picker = { scope: this.catalog.scope, query: this.query, regex: this.regex, scroll };
+    this.vscodeApi.setState({ ...this.vscodeApi.getState() as object, picker });
+  };
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.addEventListener("scroll", this.remember, true);
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener("scroll", this.remember, true);
+    super.disconnectedCallback();
+  }
+
+  protected updated(changes: PropertyValues) {
+    const previous = changes.get("catalog") as WestPickerData | undefined;
+    const saved = this.position;
+    if (changes.has("catalog") && previous?.scope !== this.catalog?.scope && saved && saved.scope === this.catalog?.scope) {
+      this.querySelectorAll(".west-pane-list").forEach((el, i) => { el.scrollTop = saved.scroll[i] ?? 0; });
+    }
+  }
 
   protected willUpdate(changes: PropertyValues) {
     const catalog = this.catalog;
@@ -46,26 +81,14 @@ export class WestProjectPicker extends ZephyrLitElement {
 
     const previous = changes.get("catalog") as WestPickerData | undefined;
     if (previous?.scope !== catalog.scope) {
-      this.query = "";
-      this.regex = false;
+      const saved = this.position;
+      this.query = saved?.scope === catalog.scope ? saved.query : "";
+      this.regex = saved?.scope === catalog.scope && saved.regex;
       this.discover = false;
       this.adding = false;
     } else if (catalog.added) {
       this.adding = false;
     }
-
-    this.refreshChangedCheckouts(catalog);
-  }
-
-  private refreshChangedCheckouts(catalog: WestPickerData) {
-    const checkouts = catalog.projects
-      .filter(tracksRemoteRevision)
-      .map(project => [project.name, project.url, project.revision, project.checkout.head]);
-    const checkoutKey = JSON.stringify([catalog.scope, ...checkouts]);
-    if (this.lastCheckoutKey === checkoutKey) { return; }
-
-    this.lastCheckoutKey = checkoutKey;
-    this.send("refreshWestProjects");
   }
 
   private send(command: string, extras: Record<string, unknown> = {}) {
@@ -248,7 +271,7 @@ export class WestProjectPicker extends ZephyrLitElement {
     const { matches, invalid } = moduleMatcher(this.query, this.regex);
     return html`
       <div class="wp-tools">
-        ${moduleSearchBox(this.query, this.regex, value => { this.query = value; }, () => { this.regex = !this.regex; })}
+        ${moduleSearchBox(this.query, this.regex, value => { this.query = value; this.remember(); }, () => { this.regex = !this.regex; this.remember(); })}
         ${this.inactive ? nothing : html`
           <button type="button" ?disabled=${!data || !this.query.trim() || invalid}
             @click=${this.searchGitHub}>${panelText("Search GitHub sources")}</button>

@@ -77,6 +77,16 @@ class WestProjectsTest(unittest.TestCase):
                         "-DZEPHYR_MODULES=" + str(module_path)]})
                     by_name = {p["name"]: p["sources"] for p in explicit["projects"]}
                     self.assertEqual(by_name["optional"], ["-DZEPHYR_MODULES"])
+            binary = app / "build"
+            binary.mkdir()
+            (binary / "CMakeCache.txt").write_text(f"APPLICATION_SOURCE_DIR:PATH={app}\nBOARD:STRING=demo/cpu\n",
+                                                  encoding="utf-8")
+            (binary / "compile_commands.json").write_text(json.dumps([
+                {"directory": str(binary), "file": str(ws / "optional" / "driver.c")}
+            ]), encoding="utf-8")
+            for board, expected in [("demo/cpu", True), ("other", False)]:
+                compiled = call("dependencies", {"application": str(app), "buildDir": str(binary), "board": board})
+                self.assertEqual(any(p["name"] == "optional" for p in compiled["projects"]), expected)
             self.assertEqual(result["beta"]["revision"], beta["revision"])
             self.assertFalse((ws / "optional").exists())
             alpha = rows()["alpha"]

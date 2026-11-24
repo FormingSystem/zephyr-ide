@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import * as vscode from "vscode";
 import * as path from "path";
-import { getProjectFolder, resolveBoardPath } from "../project_utilities/project";
+import { getBuildFolder, getProjectFolder, resolveBoardPath } from "../project_utilities/project";
 import { normalizeBuildArgs, normalizeCMakeArg } from "../project_utilities/build_args";
 import { primaryPaths, extraPaths } from "../project_utilities/config_selector";
 import { outputInfo, outputWarning } from "../utilities/output";
 import { WorkspaceConfig } from "./types";
-import { discoverDependencies, projectScope, saveDependencies } from "./west-projects";
+import { discoverDependencies, projectScope, projectSelection, saveDependencies } from "./west-projects";
 import { runWestUpdateTask, withWestUpdate } from "./west-operations";
 
 export async function syncProjectDependencies(context: vscode.ExtensionContext, ws: WorkspaceConfig, explicit = false) {
   if (!vscode.workspace.isTrusted) { return; }
-  const fetch = explicit || vscode.workspace.getConfiguration("zephyr-ide").get("autoFetchProjectModules", true);
+  const fetch = explicit || vscode.workspace.getConfiguration("zephyr-ide").get("autoFetchProjectModules", false);
   const key = ws.activeProject;
   const state = ws.activeSetupState;
   const project = key && ws.projects[key];
@@ -31,7 +31,7 @@ export async function syncProjectDependencies(context: vscode.ExtensionContext, 
   const primary = primaryPaths(entries).map(file => path.resolve(ws.rootPath, file));
   const configs = [...(primary.length ? primary : [path.join(app, "prj.conf")]), ...extraPaths(entries).map(file => path.resolve(ws.rootPath, file))];
   const cmakeArgs = normalizeBuildArgs(build?.westBuildCMakeArgs).map(normalizeCMakeArg);
-  const inputs = { cmakeArgs, application: app, projectName: key, zephyr: state.zephyrDir, board: build?.board, boardDir: build && resolveBoardPath(ws, build, state), configs };
+  const inputs = { cmakeArgs, application: app, projectName: key, zephyr: state.zephyrDir, board: build?.board, buildDir: build && getBuildFolder(ws, project, build), boardDir: build && resolveBoardPath(ws, build, state), configs };
   try {
     const unknown = await withWestUpdate(setupPath, async () => {
       const attempted = new Set<string>();
@@ -40,7 +40,8 @@ export async function syncProjectDependencies(context: vscode.ExtensionContext, 
         if (!current()) { return; }
         await saveDependencies(context, scope, result.projects, result.unresolved);
         void vscode.commands.executeCommand("zephyr-ide.update-web-view");
-        const missing = result.projects.filter(p => p.missing || p.needsUpdate);
+        const { excluded } = projectSelection(context, scope);
+        const missing = result.projects.filter(p => !excluded.includes(p.name) && (p.missing || p.needsUpdate));
         for (const p of result.projects) { outputInfo("West", p.name + " ← " + p.sources.join(", ")); }
         if (!fetch || !missing.length) {
           if (explicit) { void vscode.window.showInformationMessage(vscode.l10n.t("Detected {0} required west modules. See the module list for target revisions.", result.projects.length)); }

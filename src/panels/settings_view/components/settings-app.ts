@@ -163,6 +163,7 @@ export class SettingsApp extends ZephyrLitElement {
       {
         title: panelText("West Update Settings"),
         settings: this._settings.filter(s => [
+          "zephyr-ide.autoFetchProjectModules",
           "zephyr-ide.westNarrowUpdate",
           "zephyr-ide.westKeepDescendants",
           "zephyr-ide.westZephyrExport",

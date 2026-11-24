@@ -215,7 +215,7 @@
         },
         "zephyr-ide.autoFetchProjectModules": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "%settings.zephyr-ide.autoFetchProjectModules.description%"
         },
         "zephyr-ide.westNarrowUpdate": {

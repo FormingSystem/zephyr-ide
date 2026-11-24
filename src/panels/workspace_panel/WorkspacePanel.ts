@@ -248,7 +248,7 @@ export class WorkspacePanel {
         this.openWestYml();
         return;
       case "refreshWestProjects":
-        void this.refreshModuleStatus(message.scope, message.force === true).catch(error => notifyError("West", String(error)));
+        void this.refreshModuleStatus(message.scope).catch(error => notifyError("West", String(error)));
         return;
       case "searchGitHubRepositories": {
         const { scope, id, owner, query } = message;
@@ -469,7 +469,7 @@ export class WorkspacePanel {
 
   private checkingRemotes = false;
 
-  private async refreshModuleStatus(scope: string, force: boolean) {
+  private async refreshModuleStatus(scope: string) {
     const target = this.getTargetSetupState();
     if (!target || !this.currentWsConfig || scope !== projectScope(this.currentWsConfig, target.setupPath)) { return; }
     if (!vscode.workspace.isTrusted || this.checkingRemotes) {
@@ -480,13 +480,7 @@ export class WorkspacePanel {
     this.checkingRemotes = true;
     try {
       const { projects } = await readWestCatalog(this._context, target.setupState);
-      const pending = projects.filter(project => {
-        if (!tracksRemoteRevision(project)) { return false; }
-        const { remote, checkout } = project;
-        if (force || !remote || remote.localHead !== checkout.head) { return true; }
-        const cacheAge = Date.now() - Date.parse(remote.checkedAt);
-        return cacheAge > 15 * 60_000;
-      });
+      const pending = projects.filter(tracksRemoteRevision);
       if (!pending.length) { return; }
 
       await this._panel.postMessage({ command: "checkingWestRemotes", scope, checking: true });
@@ -555,7 +549,7 @@ export class WorkspacePanel {
       await vscode.commands.executeCommand("zephyr-ide.west-update", {
         scope, names: message.names, all: message.all === true, preserveSelection: message.preserveSelection === true,
       });
-      await this.refreshModuleStatus(scope, true);
+      await this.loadWestProjects();
     }
   }
 

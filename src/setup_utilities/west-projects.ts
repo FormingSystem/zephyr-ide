@@ -85,8 +85,8 @@ export function saveProjects(context: vscode.ExtensionContext, scope: string, na
 }
 
 export function saveDependencies(context: vscode.ExtensionContext, scope: string, detected: DetectedDependency[], unresolved: DependencyReference[] = []) {
-  const { manual } = projectSelection(context, scope);
-  return context.workspaceState.update("westSelection:" + scope, { manual, detected, unresolved, excluded: [] });
+  const { manual, excluded } = projectSelection(context, scope);
+  return context.workspaceState.update("westSelection:" + scope, { manual, detected, unresolved, excluded });
 }
 
 export function projectHelper(context: vscode.ExtensionContext, state: SetupState) {
@@ -113,7 +113,7 @@ function invoke<T>(context: vscode.ExtensionContext, state: SetupState, action: 
 }
 
 export interface DependencyInputs {
-  cmakeArgs: string[]; application: string; projectName: string; zephyr: string; board?: string; boardDir?: string; configs: string[];
+  cmakeArgs: string[]; application: string; projectName: string; zephyr: string; board?: string; boardDir?: string; buildDir?: string; configs: string[];
 }
 
 export function discoverDependencies(context: vscode.ExtensionContext, state: SetupState, inputs: DependencyInputs) {

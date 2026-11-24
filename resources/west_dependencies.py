@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """Identify named west projects from the selected application's build inputs."""
 from pathlib import Path
+import json
 import re
 import subprocess
-
 
 import yaml
 
@@ -214,11 +214,11 @@ def index_modules(projects, zephyr):
 def collect_cmake_modules(data, projects, indexed, module_roots, supplied_locally, require):
     local_modules = []
     for arg in data.get("cmakeArgs", []):
-        definition = re.fullmatch(r"-D(BOARD_ROOT|SOC_ROOT|ZEPHYR_MODULES|EXTRA_ZEPHYR_MODULES|ZEPHYR_EXTRA_MODULES)(?::\w+)?=(.+)", arg)
+        definition = re.fullmatch(r"-D(BOARD_ROOT|SOC_ROOT|ZEPHYR_MODULES|EXTRA_ZEPHYR_MODULES|ZEPHYR_EXTRA_MODULES)(?::\w+)?\s*=\s*(.+)", arg.strip(), re.S)
         if not definition:
             continue
         for value in definition[2].split(";"):
-            root = Path(value)
+            root = Path(value.strip())
             if not root.is_absolute():
                 continue
             if definition[1] in ("BOARD_ROOT", "SOC_ROOT"):
@@ -243,6 +243,45 @@ def collect_cmake_modules(data, projects, indexed, module_roots, supplied_locall
             settings = (module.get("build") or {}).get("settings") or {}
             module_roots.extend(root / settings[k] for k in ("board_root", "soc_root") if k in settings)
     return local_modules
+
+
+def configured_module_sources(data, app, board, projects, require):
+    """Use compiled translation units as evidence for the last configured target."""
+    if not data.get("buildDir") or not board:
+        return
+    binary = Path(data["buildDir"]).resolve()
+    domains = metadata(binary / "domains.yaml")
+    images = {entry["name"]: Path(entry["build_dir"]).resolve() for entry in domains.get("domains", [])
+              if entry.get("name") and entry.get("build_dir")}
+    primary = images.get(domains.get("default"), binary)
+    cache = dict(re.findall(r"^(\w+):\w+=(.*)$", contents(primary / "CMakeCache.txt"), re.M))
+    source = cache.get("APPLICATION_SOURCE_DIR") or cache.get("CMAKE_HOME_DIRECTORY")
+    if not source or Path(source).resolve() != app.resolve() or cache.get("BOARD") != board:
+        return
+    roots = sorted(((Path(project.abspath).resolve(), project.name) for project in projects.values()),
+                   key=lambda item: len(item[0].parts), reverse=True)
+    for image, directory in (images or {app.name: binary}).items():
+        database = directory / "compile_commands.json"
+        if not directory.is_relative_to(binary) or not database.is_file():
+            continue
+        inputs = [app / "CMakeLists.txt", *(Path(p) for p in data.get("configs", []))]
+        if any(p.is_file() and p.stat().st_mtime > database.stat().st_mtime for p in inputs):
+            continue
+        try:
+            commands = json.loads(contents(database))
+        except (OSError, ValueError):
+            continue
+        found = set()
+        for entry in commands:
+            if not isinstance(entry, dict) or not entry.get("file"):
+                continue
+            unit = (Path(entry.get("directory", directory)) / entry["file"]).resolve()
+            for root, name in roots:
+                if unit.is_relative_to(root):
+                    if name != "zephyr" and name not in found:
+                        require(name, database, image, detail=" (" + unit.relative_to(root).as_posix() + ")")
+                        found.add(name)
+                    break
 
 
 def collect_build_requirements(data, app, application, board, zephyr, module_roots, providers, require):
@@ -346,5 +385,6 @@ def discover(data, manifest):
 
     local_modules = collect_cmake_modules(data, projects, indexed, module_roots, supplied_locally, require)
     collect_build_requirements(data, app, application, board, zephyr, module_roots, providers, require)
+    configured_module_sources(data, app, board, projects, require)
     collect_module_dependencies(app, application, local_modules, projects, reasons, require)
     return dependency_report(projects, reasons, unknown, parents)

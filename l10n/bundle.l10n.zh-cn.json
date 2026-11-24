@@ -1466,5 +1466,7 @@
   "This SDK archive targets a different host platform.": "此 SDK 安装包适用于其他主机平台。",
   "All declared blobs match their checksums.": "所有已声明二进制文件的校验值均一致。",
   "Import local blob": "导入本地二进制组件",
-  "Select the declared blob to import": "选择要导入的已声明二进制组件"
+  "Select the declared blob to import": "选择要导入的已声明二进制组件",
+  "Download detected project dependencies automatically": "自动下载识别到的工程依赖",
+  "When disabled, project selection only detects modules. Use Download to fetch them.": "关闭后，选择工程时仅识别模块，可点击下载获取所需组件。"
 }

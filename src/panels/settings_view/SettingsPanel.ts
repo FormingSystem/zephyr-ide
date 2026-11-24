@@ -76,6 +76,13 @@ const SETTINGS: SettingDefinition[] = [
     ],
   },
   {
+    key: "zephyr-ide.autoFetchProjectModules",
+    label: vscode.l10n.t("Download detected project dependencies automatically"),
+    description: vscode.l10n.t("When disabled, project selection only detects modules. Use Download to fetch them."),
+    type: "boolean",
+    defaultValue: false,
+  },
+  {
     key: "zephyr-ide.westNarrowUpdate",
     label: vscode.l10n.t("West Narrow Update"),
     description: vscode.l10n.t("If enabled, uses 'west update --narrow' instead of 'west update'. Reduces disk usage and download time by fetching only required Git history."),
