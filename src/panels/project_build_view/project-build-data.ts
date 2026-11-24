@@ -158,6 +158,14 @@ export interface WebviewBuildTestOption {
 // ---------------------------------------------------------------------------
 
 export interface ProjectBuildPanelData {
+  cmake: {
+    source: string;
+    binary: string;
+    configured: boolean;
+    defaults: string;
+    variables: { name: string; value: string; origin: string }[];
+  };
+  hasWestWorkspace: boolean;
   /** Available projects for the dropdown */
   projectOptions: WebviewProjectOption[];
 

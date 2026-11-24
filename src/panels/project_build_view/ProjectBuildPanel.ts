@@ -20,6 +20,7 @@ import * as vscode from "vscode";
 import { ConfigurationPage } from "../configuration-page";
 import { configurationNavigation } from "../configuration-navigation";
 import * as path from "upath";
+import { describeCMake, runCMake, selectCMakeBoard, selectCMakeDirectory, type CMakeLocation } from "../../zephyr_utilities/direct-cmake";
 
 import { WorkspaceConfig, GlobalConfig } from "../../setup_utilities/types";
 import { setWorkspaceState } from "../../setup_utilities/state-management";
@@ -47,14 +48,15 @@ import {
   addTest,
   getProjectFolder,
   getBuildFolder,
+  resolveBoardRoot,
   setLocalBind,
   setActiveProfile,
   setActive,
 } from "../../project_utilities/project";
-import { ConfigFiles } from "../../project_utilities/config_selector";
+import { ConfigFiles, primaryPaths, extraPaths } from "../../project_utilities/config_selector";
 import { generateNonce } from "../webview_shared/nonce";
 import { getLaunchConfigurations as _getLaunchConfigurations, RUNNER_TARGET_PREFIX, WEST_FLASH_PREFIX, CORTEX_DEBUG_PREFIX, WEST_DEBUG_PREFIX } from "../../utilities/utils";
-import { normalizeBuildArgs } from "../../project_utilities/build_args";
+import { normalizeBuildArgs, normalizeCMakeArg } from "../../project_utilities/build_args";
 import { getRunnersYamlHint } from "../../zephyr_utilities/runners-yaml";
 import {
   formatBindLabel,
@@ -195,6 +197,21 @@ export class ProjectBuildPanel {
 
     try {
       switch (cmd) {
+        case "directCMake":
+          await this.handleCMake(message.action, message.definitions, message.binary);
+          return;
+        case "openGuide": {
+          const manual = vscode.env.language.toLowerCase().startsWith("zh") ? "workbench.zh-cn.md" : "workbench.md";
+          const uri = vscode.Uri.file(this._context.asAbsolutePath("resources/" + manual));
+          await vscode.commands.executeCommand("markdown.showPreview", uri);
+          return;
+        }
+        case "menuconfig":
+          await this.runBuildAction("menuconfig", "zephyr-ide.start-menu-config", message);
+          return;
+        case "addProject":
+          await vscode.commands.executeCommand("zephyr-ide.add-project");
+          return;
         case "switchProject":
           if (!ws.projects[message.project]) { return; }
           this._selectedProject = message.project;
@@ -645,6 +662,68 @@ export class ProjectBuildPanel {
     void this._updateHtmlAsync();
   }
 
+  private get cmakeContext() {
+    const project = this._selectedProject && this._wsConfig.projects[this._selectedProject];
+    const buildName = this._selectedBuildOrTest?.startsWith("build:") ? this._selectedBuildOrTest.slice(6) : "";
+    const build = project ? project.buildConfigs[buildName] : undefined;
+    const source = project ? getProjectFolder(this._wsConfig, project) : this._wsConfig.rootPath;
+    const key = "cmakeLocation:" + JSON.stringify([source, buildName]);
+    const binary = project && build ? getBuildFolder(this._wsConfig, project, build) : source && path.join(source, "build");
+    const saved = this._context.workspaceState.get<CMakeLocation & { definitions?: string }>(key);
+    const location = saved ?? { source, binary };
+    const defaults: string[] = [];
+    if (project && build && location.source === source) {
+      const [board, ...qualifiers] = build.board.split("/");
+      defaults.push("BOARD=" + [board + (build.revision ? "@" + build.revision : ""), ...qualifiers].join("/"));
+      const root = resolveBoardRoot(this._wsConfig, build);
+      if (root) { defaults.push("BOARD_ROOT=" + root); }
+      for (const [kind, variable] of [["config", "CONF_FILE"], ["overlay", "DTC_OVERLAY_FILE"]] as const) {
+        const entries = [...project.confFiles[kind], ...build.confFiles[kind]];
+        for (const [prefix, paths] of [["", primaryPaths(entries)], ["EXTRA_", extraPaths(entries)]] as const) {
+          if (paths.length) { defaults.push(prefix + variable + "=" + paths.map(p => path.resolve(this._wsConfig.rootPath, p)).join(";")); }
+        }
+      }
+      defaults.push(...normalizeBuildArgs(build.westBuildCMakeArgs).filter(arg => arg.startsWith("-D")).map(arg => normalizeCMakeArg(arg).slice(2)));
+    }
+    return { key, location, defaults: saved?.definitions ?? defaults.join("\n"), hasSavedDefinitions: saved?.definitions !== undefined };
+  }
+
+  private cmakeBusy = false;
+
+  private async handleCMake(action: string, definitions: string, binary: string) {
+    if (this.cmakeBusy || !vscode.workspace.isTrusted) { return; }
+    const { key, location } = this.cmakeContext;
+    if (location.binary !== binary) { return; }
+    this.cmakeBusy = true;
+    try {
+      if (action === "source" || action === "binary") {
+        const choice = await selectCMakeDirectory(action === "source");
+        if (choice) {
+          await this._context.workspaceState.update(key, typeof choice === "string" ? { source: location.source, binary: choice } : choice);
+        }
+      } else if (action === "board") {
+        const board = await selectCMakeBoard(location, definitions);
+        if (board && key === this.cmakeContext.key) {
+          await this._panel.postMessage({ command: "cmakeBoard", board, binary });
+        }
+      } else if (action === "launch") {
+        await vscode.commands.executeCommand("workbench.action.debug.selectandstart");
+      } else if (["build", "configure", "menuconfig", "target"].includes(action)) {
+        await this._panel.postMessage({ command: "buildActionStatus", action: "cmake", state: "started" });
+        const completed = await runCMake(location, action, definitions);
+        if (action === "configure" && completed) {
+          await this._context.workspaceState.update(key, { ...location, definitions });
+        }
+      }
+    } catch (error) {
+      notifyError("CMake", String(error));
+    } finally {
+      this.cmakeBusy = false;
+      await this._panel.postMessage({ command: "buildActionStatus", action: "cmake", state: "finished" });
+      this.updateHtml();
+    }
+  }
+
   private renderRequest = 0;
 
   private async _updateHtmlAsync() {
@@ -828,7 +907,11 @@ export class ProjectBuildPanel {
       }
     }
 
+    const { location, defaults, hasSavedDefinitions } = this.cmakeContext;
+    const cmake = describeCMake(location);
     return {
+      cmake: { ...cmake, defaults: cmake.configured && !hasSavedDefinitions ? "" : defaults },
+      hasWestWorkspace: !!this._wsConfig.activeSetupState?.initialized,
       projectOptions,
       buildTestOptions,
       projectInfo,

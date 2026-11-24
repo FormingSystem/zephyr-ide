@@ -396,6 +396,7 @@ export class BuildSection extends ZephyrLitElement {
             ${this._renderActionButton('buildPristine', 'refresh', panelText("Pristine"), panelText("Pristine Build"), 'secondary')}
             ${this._renderActionButton('flash', 'zap', panelText("Flash"), panelText("Flash"), 'secondary')}
             ${this._renderActionButton('debug', 'debug-alt', panelText("Debug"), panelText("Debug"), 'secondary')}
+            ${this._renderActionButton('menuconfig', 'settings-gear', "Kconfig", "west build -t menuconfig", 'secondary')}
             ${this._renderActionButton('runDashboard', 'graph', panelText("Report"), panelText("Dashboard Report"), 'secondary')}
             <vscode-button appearance="icon" icon="trash" title="${panelText("Remove Build")}"
               ?disabled=${this.activeAction !== null}

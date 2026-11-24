@@ -15,8 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import "./cmake-section";
 import { panelText } from "../../webview_shared/panel-text";
 import { html, nothing } from "lit";
+import { keyed } from "lit/directives/keyed.js";
 import { customElement, state } from "lit/decorators.js";
 import { ZephyrLitElement } from "../../webview_shared/lit-base";
 import type { ProjectBuildPanelData } from "../project-build-data";
@@ -78,17 +80,21 @@ export class ProjectBuildApp extends ZephyrLitElement {
     this.postCommand("switchBuildOrTest", { selection: select.value });
   }
 
+  @state() private buildMethod = (this.vscodeApi.getState() as { buildMethod?: "CMake" | "west" } | undefined)?.buildMethod;
+
+  private selectMethod(method: "CMake" | "west") {
+    this.buildMethod = method;
+    this.vscodeApi.setState({ ...this.vscodeApi.getState() as object, buildMethod: method });
+  }
+
   render() {
     if (!this._data) {
       return html`<div class="container panel-container"><p>${panelText("Loading…")}</p></div>`;
     }
 
     const d = this._data;
-    const hasProjects = d.projectOptions.length > 0;
+    const direct = (this.buildMethod ?? (d.hasWestWorkspace ? "west" : "CMake")) === "CMake";
     const hasBuildTestOptions = d.buildTestOptions.length > 0;
-    const hasBuild = !!d.buildDetails;
-    const hasTest = !!d.testDetails;
-    const noBuildOrTest = !hasBuild && !hasTest;
 
     return html`
       <div class="container panel-container">
@@ -98,14 +104,14 @@ export class ProjectBuildApp extends ZephyrLitElement {
             <h1 class="page-title"><i class="codicon codicon-project"></i> ${panelText("Project Details")}</h1>
           </div>
           <div class="page-header-selectors">
-            <div class="project-selector">
+            ${d.projectOptions.length ? html`<div class="project-selector">
               <label>${panelText("Project:")}</label>
               <vscode-single-select @change=${this._onProjectChange}>
                 ${d.projectOptions.map(
       (opt) => html`<vscode-option value=${opt.name} ?selected=${opt.selected}>${opt.name}</vscode-option>`,
     )}
               </vscode-single-select>
-            </div>
+            </div>` : nothing}
             ${hasBuildTestOptions
         ? html`
                   <div class="build-test-selector">
@@ -121,11 +127,26 @@ export class ProjectBuildApp extends ZephyrLitElement {
           </div>
         </div>
 
-        ${!hasProjects
+        <div class="workbench-method" role="group" aria-label=${panelText("Build method")}>
+          ${(["CMake", "west"] as const).map(method => html`<button aria-pressed=${direct === (method === "CMake")}
+            @click=${() => this.selectMethod(method)}>${method}</button>`)}
+          <vscode-button secondary @click=${() => this.postCommand("openGuide")}>${panelText("Workbench guide")}</vscode-button>
+        </div>
+        ${direct ? keyed(JSON.stringify([d.cmake.source, d.cmake.binary]), html`<cmake-section .data=${d.cmake} .busy=${!!this._activeBuildAction}></cmake-section>`) : this.renderWest(d)}
+      </div>`;
+  }
+
+  private renderWest(d: ProjectBuildPanelData) {
+    const hasProjects = d.projectOptions.length > 0;
+    const hasBuild = !!d.buildDetails;
+    const hasTest = !!d.testDetails;
+    const noBuildOrTest = !hasBuild && !hasTest;
+    return html`${!hasProjects
         ? html`
               <div class="no-project-notice">
                 <i class="codicon codicon-info"></i>
-                <p>${panelText("No projects configured. Use the command palette to add a project.")}</p>
+                <p>${panelText("Choose an application folder or start from a Zephyr sample.")}</p>
+                <vscode-button @click=${() => this.postCommand("addProject")}>${panelText("Add Project")}</vscode-button>
               </div>
             `
         : html`
@@ -199,7 +220,6 @@ export class ProjectBuildApp extends ZephyrLitElement {
                   `
             : nothing}
             `}
-      </div>
     `;
   }
 }

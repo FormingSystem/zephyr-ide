@@ -1201,3 +1201,50 @@ vscode-table-cell code {
   border-radius: 4px;
   flex-wrap: wrap;
 }
+
+.workbench-method, .cmake-location {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workbench-method { padding-block: 6px 12px; }
+.workbench-method vscode-button { margin-inline-start: auto; }
+.workbench-method button {
+  font: inherit;
+  border-radius: 4px;
+  padding: 4px 12px;
+  cursor: pointer;
+  color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+  border: 1px solid transparent;
+}
+.workbench-method button:hover { background: var(--vscode-button-secondaryHoverBackground); }
+.workbench-method button[aria-pressed="true"] { border-color: var(--vscode-focusBorder); }
+
+.cmake-section {
+  padding: clamp(8px, 1.4vw, 16px);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--zephyr-webview-radius);
+}
+.cmake-location { margin-bottom: 8px; }
+.cmake-location strong { flex: 0 0 10em; }
+.cmake-location code { overflow-wrap: anywhere; flex: 1; min-width: 8em; }
+.cmake-section details { margin-block: 12px; }
+.cmake-section summary { cursor: pointer; font-weight: 600; }
+.cmake-section details[open] summary { margin-bottom: 8px; }
+.cmake-section label { display: block; margin-block: 6px; }
+.cmake-section textarea {
+  width: 100%;
+  display: block;
+  margin-block: 6px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+  font-family: var(--vscode-editor-font-family);
+}
+.cmake-section .page-actions { border-top: 1px solid var(--vscode-panel-border); padding-top: 10px; }
+.cmake-section dd { overflow-wrap: anywhere; }
