@@ -802,10 +802,11 @@ body:has(> .workbench-navigation) {
   flex-wrap: wrap;
   align-items: center;
   gap: 3px;
-  padding: 4px clamp(6px, 2vw, 20px);
+  padding: 2px clamp(6px, 1.2vw, 14px);
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 .configuration-navigation a {
+  white-space: nowrap;
   color: var(--vscode-foreground);
   padding: 4px 9px;
   border-radius: 4px;
@@ -824,7 +825,7 @@ body:has(> .workbench-navigation) {
 }
 .workbench-navigation ~ * .container {
   max-width: 1100px;
-  padding: clamp(8px, 1.6vw, 18px);
+  padding: clamp(6px, 1.2vw, 14px);
 }
 .workbench-navigation ~ * :is(.breadcrumb, .container > .breadcrumb-link) {
   display: none;
