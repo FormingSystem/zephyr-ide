@@ -1502,5 +1502,14 @@
   "Previous page": "上一页",
   "Next page": "下一页",
   "Page {0} of {1}": "第 {0} / {1} 页",
-  "Inherit west configuration": "继承 west 配置"
+  "Inherit west configuration": "继承 west 配置",
+  "Choose the local Zephyr source directory containing scripts/list_boards.py.": "请选择包含 scripts/list_boards.py 的本地 Zephyr 源码目录。",
+  "Search board or CPU": "搜索开发板或 CPU",
+  "No matching targets": "没有匹配的目标",
+  "Scanning local boards…": "正在扫描本地开发板…",
+  "Choose Zephyr source directory": "选择 Zephyr 源码目录",
+  "Trust the workspace to scan local boards.": "请先信任当前工作区，再扫描本地开发板。",
+  "CMake definitions (-D)": "CMake 参数 (-D)",
+  "Clear selection: {0}": "清除所选 {0}",
+  "Using your definition: {0}": "本次采用手写参数：{0}"
 }

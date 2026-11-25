@@ -20,7 +20,9 @@ import * as vscode from "vscode";
 import { ConfigurationPage } from "../configuration-page";
 import { configurationNavigation } from "../configuration-navigation";
 import * as path from "upath";
-import { describeCMake, runCMake, selectCMakeBoard, selectCMakeDirectory, type CMakeLocation } from "../../zephyr_utilities/direct-cmake";
+import { effectiveDefinitions, type CMakeChoices } from "../../zephyr_utilities/cmake-choices";
+import { listCMakeBoards } from "../../zephyr_utilities/cmake-boards";
+import { describeCMake, runCMake, selectCMakeDirectory, type CMakeLocation } from "../../zephyr_utilities/direct-cmake";
 
 import { WorkspaceConfig, GlobalConfig } from "../../setup_utilities/types";
 import { setWorkspaceState } from "../../setup_utilities/state-management";
@@ -198,7 +200,7 @@ export class ProjectBuildPanel {
     try {
       switch (cmd) {
         case "directCMake":
-          await this.handleCMake(message.action, message.definitions, message.binary);
+          await this.handleCMake(message.action, message.definitions, message.binary, message.requestId, { BOARD: message.board, ZEPHYR_BASE: message.zephyrBase });
           return;
         case "openGuide": {
           const manual = vscode.env.language.toLowerCase().startsWith("zh") ? "workbench.zh-cn.md" : "workbench.md";
@@ -669,12 +671,13 @@ export class ProjectBuildPanel {
     const source = project ? getProjectFolder(this._wsConfig, project) : this._wsConfig.rootPath;
     const key = "cmakeLocation:" + JSON.stringify([source, buildName]);
     const binary = project && build ? getBuildFolder(this._wsConfig, project, build) : source && path.join(source, "build");
-    const saved = this._context.workspaceState.get<CMakeLocation & { definitions?: string }>(key);
+    const saved = this._context.workspaceState.get<CMakeLocation & { definitions?: string; choices?: CMakeChoices }>(key);
     const location = saved ?? { source, binary };
     const defaults: string[] = [];
+    const choices: CMakeChoices = {};
     if (project && build && location.source === source) {
       const [board, ...qualifiers] = build.board.split("/");
-      defaults.push("BOARD=" + [board + (build.revision ? "@" + build.revision : ""), ...qualifiers].join("/"));
+      choices.BOARD = [board + (build.revision ? "@" + build.revision : ""), ...qualifiers].join("/");
       const root = resolveBoardRoot(this._wsConfig, build);
       if (root) { defaults.push("BOARD_ROOT=" + root); }
       for (const [kind, variable] of [["config", "CONF_FILE"], ["overlay", "DTC_OVERLAY_FILE"]] as const) {
@@ -685,15 +688,38 @@ export class ProjectBuildPanel {
       }
       defaults.push(...normalizeBuildArgs(build.westBuildCMakeArgs).filter(arg => arg.startsWith("-D")).map(arg => normalizeCMakeArg(arg).slice(2)));
     }
-    return { key, location, defaults: saved?.definitions ?? defaults.join("\n"), hasSavedDefinitions: saved?.definitions !== undefined };
+    return { key, location, choices: saved?.choices ?? choices, defaults: saved?.definitions ?? defaults.join("\n"), hasSavedDefinitions: saved?.definitions !== undefined };
+  }
+
+  private async discoverBoards(location: CMakeLocation, definitions: string, browse: boolean, requestId: string) {
+    const request = { command: "cmakeBoards", requestId, binary: location.binary, source: location.source };
+    try {
+      if (browse) {
+        const folders = await vscode.window.showOpenDialog({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false, title: "ZEPHYR_BASE" });
+        await this._panel.postMessage({ ...request, chosenBase: folders?.[0]?.fsPath ?? "" });
+        return;
+      }
+      const boards = await listCMakeBoards(location, definitions, this._wsConfig.activeSetupState);
+      await this._panel.postMessage({ ...request, boards });
+    } catch (error) {
+      await this._panel.postMessage({ ...request, error: error instanceof Error ? error.message : String(error) });
+    }
   }
 
   private cmakeBusy = false;
 
-  private async handleCMake(action: string, definitions: string, binary: string) {
-    if (this.cmakeBusy || !vscode.workspace.isTrusted) { return; }
+  private async handleCMake(action: string, definitions: string, binary: string, requestId: string, choices: CMakeChoices) {
     const { key, location } = this.cmakeContext;
     if (location.binary !== binary) { return; }
+    if (action === "board" || action === "boardSource") {
+      if (!vscode.workspace.isTrusted) {
+        await this._panel.postMessage({ command: "cmakeBoards", requestId, ...location, error: vscode.l10n.t("Trust the workspace to scan local boards.") });
+        return;
+      }
+      await this.discoverBoards(location, effectiveDefinitions(definitions, choices), action === "boardSource", requestId);
+      return;
+    }
+    if (this.cmakeBusy || !vscode.workspace.isTrusted) { return; }
     this.cmakeBusy = true;
     try {
       if (action === "source" || action === "binary") {
@@ -701,18 +727,13 @@ export class ProjectBuildPanel {
         if (choice) {
           await this._context.workspaceState.update(key, typeof choice === "string" ? { source: location.source, binary: choice } : choice);
         }
-      } else if (action === "board") {
-        const board = await selectCMakeBoard(location, definitions);
-        if (board && key === this.cmakeContext.key) {
-          await this._panel.postMessage({ command: "cmakeBoard", board, binary });
-        }
       } else if (action === "launch") {
         await vscode.commands.executeCommand("workbench.action.debug.selectandstart");
       } else if (["build", "configure", "menuconfig", "target"].includes(action)) {
         await this._panel.postMessage({ command: "buildActionStatus", action: "cmake", state: "started" });
-        const completed = await runCMake(location, action, definitions);
+        const completed = await runCMake(location, action, effectiveDefinitions(definitions, choices));
         if (action === "configure" && completed) {
-          await this._context.workspaceState.update(key, { ...location, definitions });
+          await this._context.workspaceState.update(key, { source: location.source, binary: location.binary, definitions, choices });
         }
       }
     } catch (error) {
@@ -907,10 +928,10 @@ export class ProjectBuildPanel {
       }
     }
 
-    const { location, defaults, hasSavedDefinitions } = this.cmakeContext;
+    const { location, defaults, choices, hasSavedDefinitions } = this.cmakeContext;
     const cmake = describeCMake(location);
     return {
-      cmake: { ...cmake, defaults: cmake.configured && !hasSavedDefinitions ? "" : defaults },
+      cmake: { ...cmake, choices, defaults: cmake.configured && !hasSavedDefinitions ? "" : defaults },
       hasWestWorkspace: !!this._wsConfig.activeSetupState?.initialized,
       projectOptions,
       buildTestOptions,

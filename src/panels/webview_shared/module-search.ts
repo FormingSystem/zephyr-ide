@@ -13,8 +13,12 @@ export function moduleMatcher(query: string, regex: boolean) {
       return { matches: () => false, invalid: true };
     }
   }
-  const needle = term.toLowerCase();
-  const matches = (value: string) => {
+  return { matches: fuzzyMatcher(term), invalid: false };
+}
+
+export function fuzzyMatcher(query: string) {
+  const needle = query.trim().toLowerCase();
+  return (value: string) => {
     const haystack = value.toLowerCase();
     let start = 0;
     for (const letter of needle) {
@@ -26,7 +30,6 @@ export function moduleMatcher(query: string, regex: boolean) {
     }
     return true;
   };
-  return { matches, invalid: false };
 }
 
 export function moduleSearchBox(query: string, regex: boolean, input: (value: string) => void, toggle: () => void) {

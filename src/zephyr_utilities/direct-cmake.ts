@@ -77,46 +77,6 @@ export async function selectCMakeDirectory(source: boolean): Promise<CMakeLocati
   return { source: dir, binary: path.join(dir, "build") };
 }
 
-function moduleBoardRoots(binary: string) {
-  const settings = path.join(binary, "zephyr_settings.txt");
-  if (!fs.existsSync(settings)) { return []; }
-  return fs.readFileSync(settings, "utf8").split(/\r?\n/).flatMap(line => {
-    const match = /^"(BOARD_ROOT|SOC_ROOT|ARCH_ROOT)":"(.+)"$/.exec(line.trim());
-    return match ? [{ key: match[1], directory: match[2] }] : [];
-  });
-}
-
-/** Ask the checked-out Zephyr scripts for board and CPU qualifiers. */
-export async function selectCMakeBoard(location: CMakeLocation, definitions: string) {
-  const cache = parseCMakeCache(location.binary);
-  const env = toolEnvironment();
-  const overrides = Object.fromEntries(cmakeDefinitions(definitions).map(arg => {
-    const separator = arg.indexOf("=");
-    return [arg.slice(2, separator).split(":")[0], arg.slice(separator + 1)];
-  }));
-  const base = overrides.ZEPHYR_BASE || cache.ZEPHYR_BASE || env.ZEPHYR_BASE;
-  const script = base && path.join(base, "scripts", "list_boards.py");
-  if (!script || !fs.existsSync(script)) {
-    return vscode.window.showInputBox({ title: "BOARD", placeHolder: "board[@revision][/soc/cpucluster]" });
-  }
-  const args = [script, "--cmakeformat", "{NAME}|{QUALIFIERS}"];
-  const modules = moduleBoardRoots(location.binary);
-  for (const [key, flag] of [["BOARD_ROOT", "--board-root"], ["SOC_ROOT", "--soc-root"], ["ARCH_ROOT", "--arch-root"]]) {
-    const roots = (overrides[key] || cache[key] || "").split(";").filter(Boolean);
-    roots.push(...modules.filter(entry => entry.key === key).map(entry => entry.directory));
-    for (const root of new Set([base!, ...roots])) { args.push(flag, path.resolve(location.source, root)); }
-  }
-  const python = overrides.Python3_EXECUTABLE || cache.Python3_EXECUTABLE || cache._Python3_EXECUTABLE || cache.PYTHON_EXECUTABLE || (process.platform === "win32" ? "python" : "python3");
-  const { stdout } = await inspect(python, args, { env, cwd: location.source, windowsHide: true, maxBuffer: 4 * 1024 * 1024 });
-  const boards = stdout.split(/\r?\n/).flatMap(line => {
-    const [name, qualifiers] = line.replace(/^NAME;/, "").split("|QUALIFIERS;");
-    if (!name || qualifiers === undefined) { return []; }
-    const variants = qualifiers.split(";").filter(Boolean);
-    return variants.length ? variants.map(q => name + "/" + q) : [name];
-  });
-  return vscode.window.showQuickPick(boards.sort(), { title: vscode.l10n.t("Select board and CPU target") });
-}
-
 function parseTargets(output: string) {
   return output.split(/\r?\n/).flatMap(line => {
     const match = /^(?:\.\.\.\s+([^\s]+)|([^\s:]+):)/.exec(line.trim());

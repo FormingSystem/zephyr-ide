@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import type { CMakeChoices } from "../../zephyr_utilities/cmake-choices";
+
 /**
  * Data types for the Project Build Panel webview.
  *
@@ -166,6 +168,7 @@ export interface ProjectBuildPanelData {
     hasApplication: boolean;
     configured: boolean;
     defaults: string;
+    choices: CMakeChoices;
     variables: { name: string; value: string; origin: string }[];
   };
   hasWestWorkspace: boolean;

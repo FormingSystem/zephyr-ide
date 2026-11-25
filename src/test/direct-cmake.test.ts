@@ -3,6 +3,8 @@ import * as assert from "assert";
 import * as os from "os";
 import * as path from "path";
 import { promises as fs } from "fs";
+import { effectiveDefinitions } from "../zephyr_utilities/cmake-choices";
+import { boardTargets } from "../zephyr_utilities/cmake-boards";
 import { cmakeDefinitions, describeCMake } from "../zephyr_utilities/direct-cmake";
 
 suite("Direct CMake configuration", () => {
@@ -10,6 +12,26 @@ suite("Direct CMake configuration", () => {
     assert.deepStrictEqual(cmakeDefinitions("  BOARD = demo/cpu  \r\n\t\r\nEXTRA_CONF_FILE:STRING = a b.conf;c=d.conf\n"),
       ["-DBOARD=demo/cpu", "-DEXTRA_CONF_FILE:STRING=a b.conf;c=d.conf"]);
     assert.throws(() => cmakeDefinitions("BOARD demo"));
+  });
+
+  test("guided settings supplement user definitions without replacing typed or empty overrides", () => {
+    const choices = { BOARD: "selected/cpu", ZEPHYR_BASE: "source tree" };
+    const text = "CONF_FILE=one.conf;two.conf\r\n BOARD:STRING  =  user/cpu\r\nZEPHYR_BASE:PATH=";
+    assert.strictEqual(effectiveDefinitions(text, choices), text);
+    assert.deepStrictEqual(cmakeDefinitions(effectiveDefinitions("CONF_FILE=one.conf", choices)), [
+      "-DCONF_FILE=one.conf", "-DBOARD=selected/cpu", "-DZEPHYR_BASE=source tree",
+    ]);
+  });
+
+  test("keeps board revisions ahead of CPU qualifiers and deduplicates targets", () => {
+    const output = [
+      "NAME;board|QUALIFIERS;soc/app;soc/net|REVISIONS;1.0",
+      "NAME;plain|QUALIFIERS;|REVISIONS;",
+      "NAME;plain|QUALIFIERS;|REVISIONS;",
+    ].join("\r\n");
+    assert.deepStrictEqual(boardTargets(output), [
+      "board/soc/app", "board/soc/net", "board@1.0/soc/app", "board@1.0/soc/net", "plain",
+    ]);
   });
 
   test("a build directory belongs to its cached application", async () => {

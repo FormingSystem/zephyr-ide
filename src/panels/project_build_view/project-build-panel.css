@@ -1253,3 +1253,16 @@ vscode-table-cell code {
 }
 .cmake-section .page-actions { border-top: 1px solid var(--vscode-panel-border); padding-top: 10px; }
 .cmake-section dd { overflow-wrap: anywhere; }
+
+.board-picker { display: grid; gap: 4px; margin-block: 6px; max-width: 44rem; }
+.board-picker input, .board-picker select { width: 100%; box-sizing: border-box; color: var(--vscode-input-foreground); background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, var(--vscode-panel-border)); font: inherit; padding: 4px 6px; }
+.board-picker select { padding: 0; }
+.board-picker [role="status"] { overflow-wrap: anywhere; }
+.board-picker vscode-button { justify-self: start; }
+.choose-board { white-space: nowrap; }
+
+.cmake-board-control, .cmake-choice { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.cmake-choice code, .cmake-choice small { overflow-wrap: anywhere; }
+.cmake-choice small { color: var(--vscode-descriptionForeground); }
+.cmake-choice button { display: inline-flex; border: 0; border-radius: 3px; color: var(--vscode-icon-foreground); background: transparent; cursor: pointer; }
+.cmake-choice button:hover { background: var(--vscode-toolbar-hoverBackground); }
