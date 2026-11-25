@@ -20,6 +20,25 @@
 
 ![从 CMake 切到 west，再切回查看保留的开发板和配置文件。](media/workbench-cmake.zh-cn.gif)
 
+## 在工程配置图上编辑
+
+在 **工程配置 → 工程详情** 下方展开 **工程配置图**。使用 west 时先选择工程和构建配置；使用 CMake 时选择应用目录和构建目录。双击应用、分支或配置项可选择配置路线。输入板名、Kconfig 符号或设备节点路径可筛选，拖动画布空白处可平移。使用 **在编辑器中展开** 或 **在新窗口打开** 把图放到大屏，使用 −、+ 和百分比调节或复位缩放。
+
+| 分支 | 可以操作的内容 | 保存位置及使用方式 |
+| --- | --- | --- |
+| 开发板与 CPU | 搜索本地 Zephyr 支持的完整目标，包括修订与 CPU 核 | 保存到应用的 `CMakePresets.json`，预设名为 `zephyr-ide-visual`。点击 **配置预设** 或在应用目录执行 `cmake --preset zephyr-ide-visual`。现有 west 构建继续使用其所选板。 |
+| Kconfig | 查找符号，新增或修改赋值，删除目标文件中的显式赋值 | 选择工程中的 `.conf` 文件。删除显式赋值后，下次配置按其余片段与 Kconfig 默认值解析。已配置构建提供完整菜单和符号，首次配置前可编辑应用配置文件中已有的项。 |
+| 设备树 | 按节点路径找属性，调整状态、字符串、单个整型单元和布尔属性 | 读取当前构建生成的 `zephyr/zephyr.dts`，保存到应用的 `.overlay`。已有显式 `DTC_OVERLAY_FILE` 时，选择生效的 overlay；新文件需加入该变量或 `EXTRA_DTC_OVERLAY_FILE`。 |
+
+1. 双击配置项，查看当前构建解析值，在编辑控件中选择或输入新值，点击 **加入草稿**。
+2. 在差异区核对文件名、删除行和新增行。可撤销单项或放弃整份文件草稿；主窗口和分离窗口同步显示同一草稿。
+3. 点击 **保存到工程** 写入当前文件。其他文件的草稿可分别检查和保存。文件已有外部改动或未保存的编辑时，先处理冲突。草稿面向本次扩展会话，重载窗口或退出 VS Code 前请保存需要的修改。
+4. 重新配置构建，在生成的 `.config` 和 `zephyr.dts` 中核对生效结果。Kconfig 依赖、片段优先级和设备树绑定都由 Zephyr 处理。
+
+![在工程配置图上搜索、修改并确认保存 Kconfig。](media/workbench-graph.zh-cn.gif)
+
+[独立窗口的 1920 × 1080 原图](media/workbench-graph-window.zh-cn.png) · [Zephyr Kconfig 配置](https://docs.zephyrproject.org/latest/build/kconfig/setting.html) · [Zephyr 设备树 overlay](https://docs.zephyrproject.org/latest/build/dts/howtos.html) · [CMake 预设](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html)
+
 ## 配置驱动与 Kconfig
 
 先在应用的 devicetree overlay 中启用板上真实存在的设备节点，配置引脚或总线。用 `DTC_OVERLAY_FILE` 指定 overlay。在 `prj.conf` 中启用相应驱动子系统，例如 `CONFIG_I2C=y`。用 `CONF_FILE` 选择主配置，用 `EXTRA_CONF_FILE` 追加配置片段。配置完成后打开 **Kconfig · menuconfig**，按 `/` 搜索符号、查看依赖。要让设置经得住清理构建，请将需要的值保存到应用配置文件，再重新配置。最终配置和设备树分别见构建目录的 `zephyr/.config`、`zephyr/zephyr.dts`。

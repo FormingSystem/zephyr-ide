@@ -34,3 +34,11 @@ Repeat with 80 selected and three available, 40 in each list, all selected and n
 The new entry points reuse fuzzy matching, the west configuration API and the module picker. Compilation, ESLint, 551 extension-host tests and seven offline Python tests passed. The suite marked 22 tests pending. Installation and interaction were verified on Windows.
 
 In both locales a CMake fixture recorded the manually typed `BOARD:STRING`, then the selected target after the typed line was removed. Both runs kept `CONF_FILE`. Each of the three bilingual walkthroughs now shows pointer movement, click rings and the resulting state.
+
+## Configuration map and module list · 2026-11-25
+
+The installed extension was exercised in English and Simplified Chinese on Windows. Both runs covered graph navigation, zoom and pan, moving the map to another window, sharing a draft, saving a Kconfig assignment, discarding a change and handling an external file edit. A separate Zephyr configure using the saved project files produced the requested board target (`mps2/an386`), Kconfig value (`CONFIG_PRINTK=y`) and disabled UART node (`/soc/uart@40004000`).
+
+The available-module search now sits inside its section. Mouse-wheel checks verified that at either boundary of the inner list, continued scrolling moves the containing view. The four walkthroughs per language and detached-window screenshots use a 1920 × 1080 capture surface, with pointer movement and click rings in the animations. Windows reported a 1920 × 1080 display during verification.
+
+TypeScript compilation and ESLint passed. The extension suite reported 557 passing and 22 pending, and all seven offline west tests passed. Linux, macOS, a locked Windows desktop and flashing physical hardware were outside this run.

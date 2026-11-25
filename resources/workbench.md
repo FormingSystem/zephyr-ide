@@ -20,6 +20,25 @@ In the walkthroughs, follow the pointer. An orange ring marks a click. Type part
 
 ![Switch from CMake to west and back with the board and configuration file retained.](media/workbench-cmake.en.gif)
 
+## Edit the project configuration map
+
+Expand **Configuration map** below **Project Configuration → Project Details**. Select a project and build configuration for west, or an application and build directory for CMake. Double-click an application, branch or option to explore its settings. Search by board name, symbol or node path. Drag the background to pan. **Open in full editor** and **Open in new window** share the same drafts. Use −, + or the percentage button to adjust or reset zoom.
+
+| Branch | What you can edit | Project output |
+| --- | --- | --- |
+| Board and CPU | Board targets, revisions and CPU qualifiers discovered in your local Zephyr checkout | Saves a configure preset named `zephyr-ide-visual` in the application's `CMakePresets.json`. Choose **Configure preset** or run `cmake --preset zephyr-ide-visual` in the application directory. Existing west build configurations keep their own board. |
+| Kconfig | Search symbols, add or change assignments, remove an explicit assignment | Select the application's target `.conf` file. Removing an assignment lets the remaining fragments and defaults determine the value on the next configure. A configured build supplies the full symbol tree. Before configuring, existing application assignments are available. |
+| Devicetree | Node status, strings, single integer cells and flags | Reads the build's generated `zephyr/zephyr.dts` and writes to an application `.overlay`. If `DTC_OVERLAY_FILE` is set, select an active overlay or add a new file to that variable or `EXTRA_DTC_OVERLAY_FILE`. |
+
+1. Double-click an option, inspect the configured value, choose a new value and select **Stage change**.
+2. Review the target filename and changed lines. Undo an individual change or discard the file draft. The editor and separate window reflect edits to the same draft.
+3. Choose **Save to project** for each reviewed file. External changes and unsaved editor changes must be resolved before overwriting. Save edits you want to keep before reloading the extension or quitting VS Code.
+4. Reconfigure and inspect the generated `.config` and `zephyr.dts`. Zephyr applies dependencies, fragment precedence and devicetree bindings.
+
+![Search, stage and save a Kconfig assignment in the configuration map.](media/workbench-graph.en.gif)
+
+[Full-size 1920 × 1080 window](media/workbench-graph-window.en.png) · [Zephyr Kconfig settings](https://docs.zephyrproject.org/latest/build/kconfig/setting.html) · [Zephyr devicetree overlays](https://docs.zephyrproject.org/latest/build/dts/howtos.html) · [CMake presets](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html)
+
 ## Configure a device and its driver
 
 Enable the actual board device node in a devicetree overlay and configure its pins or bus. Select the overlay with `DTC_OVERLAY_FILE`. Enable the driver subsystem in prj.conf, for example `CONFIG_I2C=y`. Use `CONF_FILE` for the main configuration and `EXTRA_CONF_FILE` for additional fragments. After configuring, open **Kconfig · menuconfig**, press `/` to search for a symbol and inspect its dependencies. Record desired settings in the application configuration and reconfigure to reproduce them in a clean build. Inspect `zephyr/.config` and `zephyr/zephyr.dts` for the effective software and hardware configuration.
