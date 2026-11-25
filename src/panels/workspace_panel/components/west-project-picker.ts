@@ -256,7 +256,7 @@ export class WestProjectPicker extends ZephyrLitElement {
     return undefined;
   }
 
-  private renderCatalog(data: WestPickerData | undefined, matches: (name: string) => boolean) {
+  private renderCatalog(data: WestPickerData | undefined, matches: (name: string) => boolean, invalid: boolean) {
     if (!data) {
       return html`<p role="status">${panelText("Loading west projects…")}</p>`;
     }
@@ -278,14 +278,10 @@ export class WestProjectPicker extends ZephyrLitElement {
       ${data.partial ? html`<p role="status">${panelText("Update the manifest provider and refresh to see its modules.")}</p>` : nothing}
       <div class="wp-tools">
         ${westSelectionToolbar(locked, action => this.setSelection(rows, action))}
-        <span role="status">${panelText("{0} matched", rows.length)}</span>
         ${this.inactive ? nothing : html`
           <button class="wp-full-update" type="button" @click=${() => this.send("updateWestProjects", { names: [], all: true })}>${panelText("Run a full west update")}</button>
         `}
       </div>
-      ${this.discover && !this.inactive ? html`<west-repository-search .scope=${data.scope} .query=${this.query}
-        .regex=${this.regex} .known=${projects.map(project => project.name.toLowerCase())}
-        .choose=${(repo: GitHubRepository) => this.showForm(repo)}></west-repository-search>` : nothing}
       <div class="west-panes" data-short-list=${this.shorterList(selected.length, available.length) ?? nothing}>
         ${westSelectionPane("wp-selected-title", panelText("Selected modules"), selected.length,
           this.group(selected, panelText("Selected modules"), true), this.inactive ? undefined : html`
@@ -297,7 +293,17 @@ export class WestProjectPicker extends ZephyrLitElement {
             const group = visible.filter(project => this.origin(project) === label);
             return group.length ? this.group(group, label) : nothing;
           })}
-          ${available.length ? nothing : html`<p class="wp-empty">${panelText("No available modules")}</p>`}`, this.pageControls(page, pages))}
+          ${available.length ? nothing : html`<p class="wp-empty">${panelText("No available modules")}</p>`}`, this.pageControls(page, pages), html`<div class="wp-filters">
+        ${moduleSearchBox(this.query, this.regex, value => { this.query = value; this.changePage(0); }, () => { this.regex = !this.regex; this.changePage(0); })}
+        ${this.inactive ? nothing : html`
+          <button type="button" ?disabled=${!data || !this.query.trim() || invalid}
+            @click=${this.searchGitHub}>${panelText("Search GitHub sources")}</button>`}
+        <span role="status">${panelText("{0} matched", available.length)}</span>
+      ${invalid ? html`<p role="alert">${panelText("Invalid regular expression")}</p>` : nothing}
+      ${this.discover && !this.inactive ? html`<west-repository-search .scope=${data.scope} .query=${this.query}
+        .regex=${this.regex} .known=${projects.map(project => project.name.toLowerCase())}
+        .choose=${(repo: GitHubRepository) => this.showForm(repo)}></west-repository-search>` : nothing}
+      </div>`)}
       </div>
 
     `;
@@ -308,18 +314,14 @@ export class WestProjectPicker extends ZephyrLitElement {
     const { matches, invalid } = moduleMatcher(this.query, this.regex);
     return html`
       <div class="wp-tools">
-        ${moduleSearchBox(this.query, this.regex, value => { this.query = value; this.changePage(0); }, () => { this.regex = !this.regex; this.changePage(0); })}
         ${this.inactive ? nothing : html`
-          <button type="button" ?disabled=${!data || !this.query.trim() || invalid}
-            @click=${this.searchGitHub}>${panelText("Search GitHub sources")}</button>
           <button type="button" @click=${() => this.showForm()}>${panelText("Add Git repositories")}</button>`}
         <button type="button" ?disabled=${this.checking} @click=${() => this.send("refreshWestProjects", { force: true })}>${this.checking ? panelText("Checking updates…") : panelText("Check for updates")}</button>
         <button type="button" @click=${() => this.send("openWestYml")}>${panelText("Open in Editor")}</button>
       </div>
       ${this.renderRepositoryForm()}
       ${data?.editError ? html`<p role="alert">${data.editError}</p>` : nothing}
-      ${invalid ? html`<p role="alert">${panelText("Invalid regular expression")}</p>` : nothing}
-      ${this.renderCatalog(data, matches)}
+      ${this.renderCatalog(data, matches, invalid)}
     `;
   }
 }

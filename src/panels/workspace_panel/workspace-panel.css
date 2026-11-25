@@ -254,3 +254,7 @@ west-project-picker form p { flex-basis: 100%; margin: 0; }
 .west-update-options label { display: inline-flex; align-items: center; gap: 4px; }
 .west-update-options select { font: inherit; color: var(--vscode-dropdown-foreground); background: var(--vscode-dropdown-background); }
 .workspace-group button, .modules-content button { white-space: nowrap; }
+
+.wp-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; padding: 4px 8px; flex: none; border-bottom: 1px solid var(--west-row-border); }
+.wp-filters .module-search { flex: 1 1 16rem; }
+.wp-filters west-repository-search, .wp-filters [role="alert"] { flex-basis: 100%; }

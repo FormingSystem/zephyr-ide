@@ -137,9 +137,10 @@
 .west-pane-list {
     max-height: min(34vh, 22rem);
     overflow-y: auto;
-    overscroll-behavior-y: contain;
 }
 
 .west-pane-list:focus-visible {
     outline: 1px solid var(--vscode-focusBorder);
 }
+
+.blob-search { padding: 4px 8px; border-bottom: 1px solid var(--west-row-border); }

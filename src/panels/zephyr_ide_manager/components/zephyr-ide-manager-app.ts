@@ -171,7 +171,7 @@ export class ZephyrIDEManagerApp extends ZephyrLitElement {
     const actionable = matched.filter(m => !m.isFetched);
     const pending = actionable.filter(m => !this._selectedBlobs.has(m.moduleName));
     const selected = modules.filter(m => this._selectedBlobs.has(m.moduleName));
-    const fetched = matched.filter(m => m.isFetched);
+    const fetched = modules.filter(m => m.isFetched);
 
     return html`
       <div class="container">
@@ -246,8 +246,7 @@ export class ZephyrIDEManagerApp extends ZephyrLitElement {
             ${this._blobLoading
               ? html`<div class="inline-status"><vscode-progress-ring></vscode-progress-ring><span>${panelText("Loading blob modules…")}</span></div>`
               : this._blobModules.length > 0
-                ? html`${moduleSearchBox(this.blobQuery, this.blobRegex, value => { this.blobQuery = value; }, () => { this.blobRegex = !this.blobRegex; })}
-                  ${invalid ? html`<p role="alert">${panelText("Invalid regular expression")}</p>` : nothing}
+                ? html`
                   ${westSelectionToolbar(this._blobInstalling || !actionable.length, action => {
                     this._selectedBlobs = changeSelection(this._selectedBlobs, actionable.map(m => m.moduleName), action);
                   })}
@@ -255,7 +254,8 @@ export class ZephyrIDEManagerApp extends ZephyrLitElement {
                     ${westSelectionPane("blob-selected-title", panelText("Selected modules"), selected.length,
                       this.blobRows(selected, panelText("No modules selected")))}
                     ${westSelectionPane("blob-available-title", panelText("Available modules"), pending.length,
-                      this.blobRows(pending, panelText("No available modules")))}
+                      this.blobRows(pending, panelText("No available modules")), undefined, html`<div class="blob-search">${moduleSearchBox(this.blobQuery, this.blobRegex, value => { this.blobQuery = value; }, () => { this.blobRegex = !this.blobRegex; })}
+                  ${invalid ? html`<p role="alert">${panelText("Invalid regular expression")}</p>` : nothing}</div>`)}
                     ${fetched.length ? westSelectionPane("blob-fetched-title", panelText("Fetched modules"), fetched.length,
                       this.blobRows(fetched)) : nothing}
                   </div>`

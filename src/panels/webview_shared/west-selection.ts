@@ -12,9 +12,10 @@ export function westSelectionToolbar(disabled: boolean, apply: (action: Selectio
   </div>`;
 }
 
-export function westSelectionPane(id: string, title: string, count: number, content: TemplateResult, action?: TemplateResult) {
+export function westSelectionPane(id: string, title: string, count: number, content: TemplateResult, action?: TemplateResult, filters?: TemplateResult) {
   return html`<section class="west-pane">
     <div class="west-pane-header"><h4 id=${id}>${title} <small>${count}</small></h4>${action}</div>
+    ${filters}
     <div class="west-pane-list" tabindex="0" role="region" aria-labelledby=${id}>${content}</div>
   </section>`;
 }
