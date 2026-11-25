@@ -188,9 +188,9 @@ export class HostToolsClient {
       const pkg = target.getAttribute('data-package') ?? '';
       switch (action) {
         case 'installPackage': this.installPackage(pkg); break;
+        case 'installAllMissing': this.installAllMissing(); break;
         case 'installPackageManager': this.installPackageManager(); break;
         case 'openManagerInstallUrl': this.openManagerInstallUrl(); break;
-        case 'navigateToSetup': this.navigateToSetup(); break;
       }
     });
   }
@@ -412,7 +412,7 @@ export class HostToolsClient {
 
     // Update summary counts and action buttons to reflect the new state.
     if (this.currentStatus) {
-      this.updateSummary();
+      this.updateSummary(this.currentStatus);
       const actuallyMissing = countMissing(this.currentStatus.packages, this.state);
       this.updateActionButtons(actuallyMissing, this.currentStatus.managerAvailable);
     }
@@ -455,24 +455,13 @@ export class HostToolsClient {
    * Update the summary counts box (cards mode) in-place without re-rendering
    * the full package list.
    */
-  private updateSummary(): void {
-    if (!this.currentStatus) { return; }
-
-    const availableCount = this.currentStatus.packages.filter(
-      p => p.available || this.state.packageStates[p.name] === 'installed'
+  private updateSummary(data: HostToolsStatusData): void {
+    const summary = document.getElementById('tools-summary');
+    if (!summary) { return; }
+    const available = data.packages.filter(pkg =>
+      pkg.available || this.state.packageStates[pkg.name] === 'installed'
     ).length;
-    const actuallyMissing = countMissing(this.currentStatus.packages, this.state);
-    const totalCount = this.currentStatus.packages.length;
-
-    const summaryBox = document.querySelector('.summary-box');
-    if (summaryBox) {
-      const counts = summaryBox.querySelectorAll('.summary-count');
-      if (counts.length >= 3) {
-        counts[0].textContent = String(availableCount);
-        counts[1].textContent = String(actuallyMissing);
-        counts[2].textContent = String(totalCount);
-      }
-    }
+    summary.textContent = panelText("{0} of {1} available", available, data.packages.length);
   }
 
   // -----------------------------------------------------------------------
@@ -494,6 +483,9 @@ export class HostToolsClient {
   }
 
   private displayError(error: string): void {
+    const summary = document.getElementById('tools-summary');
+    if (summary) { summary.textContent = ''; }
+    this.disableAllButtons(true);
     const managerStatus = document.getElementById('manager-status');
     if (managerStatus) {
       managerStatus.innerHTML = `
@@ -534,51 +526,24 @@ export class HostToolsClient {
   }
 
   private displayStatusCards(data: HostToolsStatusData): void {
-    const managerHtml = `
-      <div class="manager-status-box ${data.managerAvailable ? 'manager-available' : 'manager-unavailable'}">
-        <div class="manager-info">
-          <div>
-            <div class="manager-name">${escapeHtml(data.managerName)}</div>
-            <div class="manager-type-label">${panelText("Package Manager")}</div>
-          </div>
-          <span class="status-badge ${data.managerAvailable ? 'status-available' : 'status-missing'}">
-            ${data.managerAvailable ? panelText("✓ Available") : panelText("✗ Not Available")}
-          </span>
-        </div>
-        ${!data.managerAvailable ? `
-          <div class="manager-actions">
-            ${data.managerInstallUrl
-              ? `<p>${escapeHtml(panelText("The {0} package manager is required but not installed.", data.managerName))}</p>
-                 <vscode-button data-action="openManagerInstallUrl">${escapeHtml(panelText("Install {0}", data.managerName))}</vscode-button>`
-              : `<vscode-button data-action="installPackageManager">${escapeHtml(panelText("Install {0}", data.managerName))}</vscode-button>`
-            }
-          </div>` : ''}
-      </div>`;
-
-    const el = document.getElementById('manager-status');
-    if (el) { el.innerHTML = managerHtml; }
-
-    // Include packages that have been installed in this session (client state
-    // 'installed') so the Available count updates immediately without waiting
-    // for the next status refresh from the extension.
-    const availableCount = data.packages.filter(
-      p => p.available || this.state.packageStates[p.name] === 'installed'
-    ).length;
-    const actuallyMissing = countMissing(data.packages, this.state);
-    const totalCount = data.packages.length;
-
-    let packagesHtml = `
-      <div class="summary-box">
-        <div class="summary-item"><div class="summary-count available">${availableCount}</div><div class="summary-label">${panelText("Available")}</div></div>
-        <div class="summary-item"><div class="summary-count missing">${actuallyMissing}</div><div class="summary-label">${panelText("Not Available")}</div></div>
-        <div class="summary-item"><div class="summary-count">${totalCount}</div><div class="summary-label">${panelText("Total")}</div></div>
-      </div>
-      <div class="package-list">`;
+    const manager = document.getElementById('manager-status');
+    if (manager) {
+      const status = data.managerAvailable ? panelText("✓ Available") : panelText("✗ Not Available");
+      manager.innerHTML = `
+        <span>${panelText("Package Manager")}</span>
+        <strong>${escapeHtml(data.managerName)}</strong>
+        <span class="status-badge ${data.managerAvailable ? 'status-available' : 'status-missing'}">${status}</span>
+        ${data.managerAvailable ? '' : `<vscode-button secondary
+          data-action="${data.managerInstallUrl ? 'openManagerInstallUrl' : 'installPackageManager'}">
+          ${escapeHtml(panelText("Install {0}", data.managerName))}</vscode-button>`}`;
+    }
+    this.updateSummary(data);
+    let packagesHtml = '<ul class="package-list">';
 
     for (const pkg of data.packages) {
       const info = getPackageDisplayInfo(pkg, this.state, data.managerAvailable);
       packagesHtml += `
-        <div class="package-item ${info.itemClass}" data-package-name="${escapeHtml(pkg.name)}">
+        <li class="package-item ${info.itemClass}" data-package-name="${escapeHtml(pkg.name)}">
           <div class="package-info">
             <div class="package-name">${escapeHtml(pkg.name)}</div>
             <div class="package-package">${escapeHtml(pkg.package)}</div>
@@ -589,19 +554,14 @@ export class HostToolsClient {
               ? `<vscode-button class="install-inline-btn" appearance="secondary" data-action="installPackage" data-package="${escapeHtml(pkg.name)}">${panelText("Install")}</vscode-button>`
               : ''}
           </div>
-        </div>`;
+        </li>`;
     }
-    packagesHtml += '</div>';
+    packagesHtml += '</ul>';
 
     const pkgEl = document.getElementById('packages-status');
     if (pkgEl) { pkgEl.innerHTML = packagesHtml; }
 
-    this.updateActionButtons(actuallyMissing, data.managerAvailable);
-  }
-
-  /** Post the 'openSetupPanel' command to navigate back to the setup panel. */
-  navigateToSetup(): void {
-    this.vscode.postMessage({ command: 'openSetupPanel' });
+    this.updateActionButtons(countMissing(data.packages, this.state), data.managerAvailable);
   }
 
   private updateActionButtons(actuallyMissing: number, managerAvailable: boolean): void {
@@ -614,20 +574,16 @@ export class HostToolsClient {
     ) ?? false;
 
     if (installAllBtn && !this.state.inProgress) {
+      installAllBtn.hidden = !stillChecking && actuallyMissing === 0;
       if (stillChecking) {
         // Checks still running — show a spinner label and keep the button disabled.
         installAllBtn.setAttribute('disabled', '');
         installAllBtn.removeAttribute('data-action');
         installAllBtn.innerHTML = `<vscode-icon slot="start-icon" name="loading" spin></vscode-icon> ${panelText("Checking Packages…")}`;
-      } else if (actuallyMissing === 0) {
-        // All tools are available — pivot the primary action button into a CTA
-        // that takes the user to the next step instead of installing nothing.
-        installAllBtn.removeAttribute('disabled');
-        installAllBtn.setAttribute('data-action', 'navigateToSetup');
-        installAllBtn.innerHTML = `<vscode-icon slot="start-icon" name="arrow-right"></vscode-icon> ${panelText("Open Setup Panel")}`;
-      } else {
-        // Normal install mode — reset in case button was previously in CTA mode.
+      } else if (installAllBtn.hidden) {
         installAllBtn.removeAttribute('data-action');
+      } else {
+        installAllBtn.setAttribute('data-action', 'installAllMissing');
         installAllBtn.toggleAttribute('disabled', !(managerAvailable && !this.state.inProgress));
         installAllBtn.innerHTML = `<vscode-icon slot="start-icon" name="cloud-download"></vscode-icon> ${panelText("Install All Missing Packages")}`;
       }
@@ -636,9 +592,6 @@ export class HostToolsClient {
     }
 
     if (markCompleteBtn) {
-      // Keep the skip button enabled only when there are still missing tools
-      // and all checks have finished; once everything is available the primary
-      // CTA above serves as forward navigation, so "Skip" would be misleading.
       markCompleteBtn.toggleAttribute('disabled', stillChecking || !(actuallyMissing > 0));
     }
   }

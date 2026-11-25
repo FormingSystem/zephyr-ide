@@ -1493,5 +1493,10 @@
   "Workbench guide": "工作台使用手册",
   "Zephyr IDE": "Zephyr IDE",
   "Browse: {0}": "浏览{0}",
-  "Choose an application directory containing CMakeLists.txt to enable Configure.": "请选择包含 CMakeLists.txt 的应用目录，即可开始配置。"
+  "Choose an application directory containing CMakeLists.txt to enable Configure.": "请选择包含 CMakeLists.txt 的应用目录，即可开始配置。",
+  "{0} of {1} available": "{0} / {1} 项可用",
+  "Installation notes": "安装说明",
+  "Long paths are disabled. Building Python packages may fail.": "Windows 长路径支持未启用，构建 Python 包可能失败。",
+  "Enable long paths (administrator)": "启用长路径（需管理员权限）",
+  "The SDK panel can extract archives with tar.exe. Some west sdk workflows also use 7-Zip.": "SDK 面板可使用 tar.exe 解包。部分 west sdk 工作流还会用到 7-Zip。"
 }

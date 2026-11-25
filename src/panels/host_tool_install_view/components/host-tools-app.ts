@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 import { panelText } from "../../webview_shared/panel-text";
-import { html } from 'lit';
+import { html, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { ZephyrLitElement } from '../../webview_shared/lit-base';
 import { HostToolsClient } from '../../webview_shared/hostToolsClient';
@@ -88,130 +88,63 @@ export class HostToolsApp extends ZephyrLitElement {
     this._client.refreshStatus();
   }
 
-  private _sendCommand(cmd: string) { this.postCommand(cmd); }
-  private _markComplete() { this.vscodeApi.postMessage({ command: 'markComplete' }); }
-  private _enableLongPaths() { this.vscodeApi.postMessage({ command: 'enableWindowsLongPaths' }); }
-  private _install7Zip() { this.vscodeApi.postMessage({ command: 'install7zip' }); }
+  private renderOptionalTool() {
+    if (this._sevenZipAvailable === undefined) { return nothing; }
+    return html`<div class="optional-tool">
+      <span>${panelText("Optional: 7-Zip")}</span>
+      ${this._sevenZipAvailable
+        ? html`<span class="status-available">${panelText("✓ Installed")}</span>`
+        : html`<vscode-button secondary ?disabled=${this._sevenZipInstalling}
+            @click=${() => this.postCommand('install7zip')}>
+            ${this._sevenZipInstalling ? panelText("Installing") : panelText("Install")}
+          </vscode-button>`}
+    </div>`;
+  }
 
-  private _render7ZipSection() {
-    if (this._sevenZipAvailable === undefined) { return ''; }
-    const installed = this._sevenZipAvailable;
-    return html`
-      <div class="manager-section">
-        <h3>${panelText("Optional: 7-Zip")}</h3>
-        <div class="info-box">
-          <p>
-            <strong>${panelText("7-Zip is no longer required")}</strong> ${panelText("for Zephyr IDE SDK installation. Windows 11's built-in")} <code>tar.exe</code> ${panelText("(libarchive) can extract")}
-            <code>.7z</code> ${panelText("archives natively, so the extension uses it by default.")}
-          </p>
-          <p>
-            ${panelText("If you plan to use the")} <code>west sdk</code> ${panelText("command-line tool directly, you may want 7-Zip available on your PATH.")}
-            <strong>${panelText("For most users, we recommend using the Zephyr IDE SDK panel (")}<em>${panelText("SDK & Toolchains")}</em>${panelText(") instead — no 7-Zip required.")}</strong>
-          </p>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-            ${installed
-              ? html`<vscode-icon name="check" style="color:var(--vscode-terminal-ansiGreen)"></vscode-icon>
-                     <span>${panelText("7-Zip is installed and available.")}</span>`
-              : html`<vscode-icon name="circle-slash" style="color:var(--vscode-descriptionForeground)"></vscode-icon>
-                     <span>${panelText("7-Zip is not installed.")}</span>`}
-          </div>
-        </div>
-        ${!installed ? html`
-          <div class="button-group" style="margin-top:8px;">
-            <vscode-button appearance="secondary"
-              ?disabled=${this._sevenZipInstalling}
-              @click=${this._install7Zip}>
-              <vscode-icon slot="start-icon" name="cloud-download"></vscode-icon>
-              ${this._sevenZipInstalling ? 'Installing…' : panelText("Install 7-Zip (optional)")}
-            </vscode-button>
-          </div>
-        ` : ''}
-      </div>
-    `;
+  private renderLongPathsWarning() {
+    if (this._windowsLongPathsEnabled !== false) { return nothing; }
+    return html`<div class="host-warning">
+      <span>${panelText("Long paths are disabled. Building Python packages may fail.")}</span>
+      <vscode-button secondary @click=${() => this.postCommand('enableWindowsLongPaths')}>
+        ${panelText("Enable long paths (administrator)")}
+      </vscode-button>
+    </div>`;
   }
 
   render() {
-    const showLongPathsBanner = this._windowsLongPathsEnabled === false;
-    return html`
-      <div class="container">
-        <div class="breadcrumb">
-          <a class="breadcrumb-link" @click=${() => this._sendCommand('openSetupPanel')}>${panelText("← Setup & Configuration")}</a>
-          <span class="breadcrumb-separator">/</span>
-          <span class="breadcrumb-current">${panelText("Host Tools")}</span>
+    return html`<main class="container host-tools">
+      <header class="page-header">
+        <h1 class="page-title">${panelText("Host Tools")}</h1>
+        <vscode-button secondary @click=${() => this.postCommand("toolEnvironment")}>
+          ${panelText("Local tool environment")}
+        </vscode-button>
+      </header>
+      ${this.renderLongPathsWarning()}
+      <div id="manager-status">${panelText("Checking package manager...")}</div>
+      <section aria-labelledby="tools-heading">
+        <div class="tool-list-header">
+          <h2 id="tools-heading">${panelText("Required Development Tools")}</h2>
+          <span id="tools-summary" role="status"></span>
         </div>
-        <div class="page-header">
-          <vscode-button appearance="secondary" @click=${() => this.postCommand("toolEnvironment")}>${panelText("Local tool environment")}</vscode-button>
-          <div>
-            <h1 class="page-title">${panelText("Host Tools Installation")}</h1>
-            <p class="page-subtitle">${panelText("Install and maintain local system dependencies for Zephyr development.")}</p>
-          </div>
-        </div>
-
-        ${showLongPathsBanner ? html`
-          <div class="warning-box">
-            <p><strong>${panelText("⚠ Windows Long Path Support is not enabled.")}</strong></p>
-            <p>
-              ${panelText("Without long path support, building Python packages from source (such as")}
-              <code>hidapi</code>${panelText(") may fail because the build directories created by pip can exceed Windows' default 260-character path limit.")}
-            </p>
-            <p>
-              ${panelText("Click the button below to enable long path support system-wide. This requires administrator privileges and takes effect immediately — no restart is needed.")}
-            </p>
-            <vscode-button @click=${this._enableLongPaths}>
-              ${panelText("Enable Windows Long Path Support")}
-            </vscode-button>
-          </div>
-        ` : ''}
-
-        <div class="host-tools-manager">
-          <div class="info-box">
-            <p>
-              ${panelText("This tool helps you install and manage development tools required for Zephyr RTOS development. The tools will be installed using your platform's package manager.")}
-            </p>
-            <p class="host-tools-note">
-              <strong>${panelText("Note:")}</strong> ${panelText("VS Code may need to be restarted after installation for tools to be available in the PATH.")}
-            </p>
-          </div>
-
-          <div id="package-manager-section" class="manager-section">
-            <h3>${panelText("Package Manager Status")}</h3>
-            <div id="manager-status" class="status-area">
-              <div class="loading">${panelText("Checking package manager...")}</div>
-            </div>
-          </div>
-
-          <div id="packages-section" class="manager-section">
-            <h3>${panelText("Required Development Tools")}</h3>
-            <div id="packages-status" class="status-area">
-              <div class="loading">${panelText("Checking packages...")}</div>
-            </div>
-          </div>
-
-          <div id="actions-section" class="manager-section">
-            <div class="button-group">
-              <vscode-button id="refresh-btn" appearance="secondary" @click=${() => this._client.refreshStatus()}>
-                <vscode-icon slot="start-icon" name="refresh"></vscode-icon>
-                ${panelText("Refresh Status")}
-              </vscode-button>
-              <vscode-button id="install-all-btn" @click=${() => this._client.installAllMissing()} disabled>
-                <vscode-icon slot="start-icon" name="cloud-download"></vscode-icon>
-                ${panelText("Install All Missing Packages")}
-              </vscode-button>
-            </div>
-          </div>
-        </div>
-
-        ${this._render7ZipSection()}
-
-        <div class="manager-section">
-          <div class="button-group">
-            <vscode-button id="mark-complete-btn" appearance="secondary" @click=${this._markComplete}>
-              <vscode-icon slot="start-icon" name="check"></vscode-icon>
-              ${panelText("Skip & Mark as Complete")}
-            </vscode-button>
-          </div>
-        </div>
+        <div id="packages-status">${panelText("Checking packages...")}</div>
+      </section>
+      <div class="host-actions">
+        <vscode-button id="install-all-btn" data-action="installAllMissing" disabled>
+          ${panelText("Install All Missing Packages")}
+        </vscode-button>
+        <vscode-button id="refresh-btn" secondary @click=${() => this._client.refreshStatus()}>
+          ${panelText("Refresh Status")}
+        </vscode-button>
+        <vscode-button id="mark-complete-btn" secondary disabled @click=${() => this.postCommand('markComplete')}>
+          ${panelText("Skip & Mark as Complete")}
+        </vscode-button>
       </div>
-    `;
+      ${this.renderOptionalTool()}
+      <details class="install-notes">
+        <summary>${panelText("Installation notes")}</summary>
+        <p>${panelText("VS Code may need to be restarted after installation for tools to be available in the PATH.")}</p>
+        ${this._sevenZipAvailable === undefined ? nothing : html`<p>${panelText("The SDK panel can extract archives with tar.exe. Some west sdk workflows also use 7-Zip.")}</p>`}
+      </details>
+    </main>`;
   }
 }
