@@ -23,7 +23,10 @@ export interface WestPickerData extends WestCatalog {
   added?: string[];
 }
 
+const modulesPerPage = 20;
+
 interface PickerPosition {
+  page?: number;
   scope: string;
   query: string;
   regex: boolean;
@@ -38,6 +41,7 @@ export class WestProjectPicker extends ZephyrLitElement {
   @state() private selected = new Set<string>();
   @state() private query = "";
   @state() private regex = false;
+  @state() private page = 0;
   @state() private discover = false;
   @state() private adding = false;
   @state() private lineCount = 0;
@@ -50,7 +54,7 @@ export class WestProjectPicker extends ZephyrLitElement {
   private remember = () => {
     if (!this.catalog) { return; }
     const scroll = Array.from(this.querySelectorAll(".west-pane-list"), el => el.scrollTop);
-    const picker = { scope: this.catalog.scope, query: this.query, regex: this.regex, scroll };
+    const picker = { scope: this.catalog.scope, query: this.query, regex: this.regex, page: this.page, scroll };
     this.saveState("picker", picker);
   };
 
@@ -82,6 +86,7 @@ export class WestProjectPicker extends ZephyrLitElement {
     const previous = changes.get("catalog") as WestPickerData | undefined;
     if (previous?.scope !== catalog.scope) {
       const saved = this.position;
+      this.page = saved?.scope === catalog.scope ? saved.page ?? 0 : 0;
       this.query = saved?.scope === catalog.scope ? saved.query : "";
       this.regex = saved?.scope === catalog.scope && saved.regex;
       this.discover = false;
@@ -158,6 +163,11 @@ export class WestProjectPicker extends ZephyrLitElement {
     return this.selected.has(name) ? html`<small>${panelText("Manually selected")}</small>` : nothing;
   }
 
+  private rowIcon(icon: string, label: string, action: () => void) {
+    return html`<button type="button" title=${label} aria-label=${label} @click=${action}>
+      <span class="codicon codicon-${icon}" aria-hidden="true"></span></button>`;
+  }
+
   private group(rows: WestProject[], label: string, pinned = false) {
     return html`<section class="wp-group" aria-label=${label}>
       ${pinned ? nothing : html`<h5>${label} <small>${rows.length}</small></h5>`}
@@ -166,13 +176,13 @@ export class WestProjectPicker extends ZephyrLitElement {
         <label title=${[project.url, project.revision].join("\n")}>
           <input type="checkbox" .checked=${live(this.selected.has(project.name))} ?disabled=${this.inactive}
             @change=${() => this.setSelection([project], "invert")}>
-          <span><strong>${project.name}</strong><small>${project.path}${pinned ? " · " + this.origin(project) : ""}</small>${this.dependencyReason(project.name)}</span>
+          <span class="wp-identity"><strong>${project.name}</strong><small>${project.path}${pinned ? " · " + this.origin(project) : ""}</small>${this.dependencyReason(project.name)}</span>
         </label>
         <span class="wp-checkout" title=${[project.checkout.head, project.remote?.sha].filter(Boolean).join(" → ")}>
           ${this.checkoutStatus(project)}${project.remote && project.checkout.state === "cloned" ? html`<small>${panelText("Checked {0}", new Date(project.remote.checkedAt).toLocaleString())}</small>` : nothing}
         </span>
-        <span class="wp-revision" title=${project.revision}>
-          <small>${panelText("Manifest revision")}</small><code>${/^[0-9a-f]{40,64}$/i.test(project.revision) ? project.revision.slice(0, 10) : project.revision}</code>
+        <span class="wp-revision" title=${panelText("Manifest revision") + " · " + project.revision}>
+          <code aria-label=${panelText("Manifest revision") + " " + project.revision}>${/^[0-9a-f]{40,64}$/i.test(project.revision) ? project.revision.slice(0, 10) : project.revision}</code>
           ${project.revision === "HEAD" ? html`<small>${panelText("Not pinned to a commit")}</small>` : nothing}
         </span>
         ${!this.inactive ? html`
@@ -180,9 +190,8 @@ export class WestProjectPicker extends ZephyrLitElement {
             @click=${() => this.send("updateWestProjects", { names: [project.name], preserveSelection: true })}>
             ${project.checkout.state === "absent" ? panelText("Download") : panelText("Update")}
           </button>
-          <button type="button" aria-label=${panelText("Edit {0}", project.name)} @click=${() => this.showForm(undefined, project)}>${panelText("Edit")}</button>
-          <button type="button" aria-label=${panelText("Remove {0}", project.name)}
-          @click=${() => this.send("editWestProject", { remove: project.name })}>${panelText("Remove")}</button>` : nothing}
+          ${this.rowIcon("edit", panelText("Edit {0}", project.name), () => this.showForm(undefined, project))}
+          ${this.rowIcon("trash", panelText("Remove {0}", project.name), () => this.send("editWestProject", { remove: project.name }))}` : nothing}
       </div>`)}
     </section>`;
   }
@@ -223,6 +232,24 @@ export class WestProjectPicker extends ZephyrLitElement {
       (searchRevision && project.revision.toLowerCase().startsWith(query)));
   }
 
+  private changePage(page: number) {
+    this.page = page;
+    const list = this.querySelector<HTMLElement>('[aria-labelledby="wp-available-title"]');
+    if (list) { list.scrollTop = 0; }
+    this.remember();
+  }
+
+  private pageControls(page: number, pages: number) {
+    if (pages < 2) { return; }
+    return html`<div class="wp-pager">
+      <button type="button" ?disabled=${page === 0} aria-label=${panelText("Previous page")}
+        title=${panelText("Previous page")} @click=${() => this.changePage(page - 1)}><span class="codicon codicon-chevron-left" aria-hidden="true"></span></button>
+      <span role="status">${panelText("Page {0} of {1}", page + 1, pages)}</span>
+      <button type="button" ?disabled=${page === pages - 1} aria-label=${panelText("Next page")}
+        title=${panelText("Next page")} @click=${() => this.changePage(page + 1)}><span class="codicon codicon-chevron-right" aria-hidden="true"></span></button>
+    </div>`;
+  }
+
   private shorterList(selected: number, available: number) {
     if (selected * 2 < available) { return "selected"; }
     if (available * 2 < selected) { return "available"; }
@@ -241,6 +268,10 @@ export class WestProjectPicker extends ZephyrLitElement {
     const selected = projects.filter(project => this.selected.has(project.name));
     const available = rows.filter(project => !this.selected.has(project.name));
     const sources = [panelText("Workspace manifest"), panelText("Official GitHub repositories"), panelText("Custom Git repositories")];
+    const pages = Math.max(1, Math.ceil(available.length / modulesPerPage));
+    const page = Math.min(this.page, pages - 1);
+    const ordered = sources.flatMap(source => available.filter(project => this.origin(project) === source));
+    const visible = ordered.slice(page * modulesPerPage, (page + 1) * modulesPerPage);
     const locked = this.inactive || !rows.length;
     return html`
       ${data.unresolved?.map(ref => html`<p role="status" title=${ref.sources.join("\n")}><strong>${ref.name}</strong> · ${panelText("Required by {0}", ref.requiredBy.join(", "))} · ${panelText("No revision in the west manifest")}</p>`)}
@@ -248,6 +279,9 @@ export class WestProjectPicker extends ZephyrLitElement {
       <div class="wp-tools">
         ${westSelectionToolbar(locked, action => this.setSelection(rows, action))}
         <span role="status">${panelText("{0} matched", rows.length)}</span>
+        ${this.inactive ? nothing : html`
+          <button class="wp-full-update" type="button" @click=${() => this.send("updateWestProjects", { names: [], all: true })}>${panelText("Run a full west update")}</button>
+        `}
       </div>
       ${this.discover && !this.inactive ? html`<west-repository-search .scope=${data.scope} .query=${this.query}
         .regex=${this.regex} .known=${projects.map(project => project.name.toLowerCase())}
@@ -260,15 +294,12 @@ export class WestProjectPicker extends ZephyrLitElement {
             </vscode-button>`)}
         ${westSelectionPane("wp-available-title", panelText("Available modules"), available.length, html`
           ${sources.map(label => {
-            const group = available.filter(project => this.origin(project) === label);
+            const group = visible.filter(project => this.origin(project) === label);
             return group.length ? this.group(group, label) : nothing;
           })}
-          ${available.length ? nothing : html`<p class="wp-empty">${panelText("No available modules")}</p>`}`)}
+          ${available.length ? nothing : html`<p class="wp-empty">${panelText("No available modules")}</p>`}`, this.pageControls(page, pages))}
       </div>
-      ${this.inactive ? nothing : html`
-        <div class="wp-tools wp-actions">
-          <button type="button" @click=${() => this.send("updateWestProjects", { names: [], all: true })}>${panelText("Run a full west update")}</button>
-        </div>`}
+
     `;
   }
 
@@ -277,7 +308,7 @@ export class WestProjectPicker extends ZephyrLitElement {
     const { matches, invalid } = moduleMatcher(this.query, this.regex);
     return html`
       <div class="wp-tools">
-        ${moduleSearchBox(this.query, this.regex, value => { this.query = value; this.remember(); }, () => { this.regex = !this.regex; this.remember(); })}
+        ${moduleSearchBox(this.query, this.regex, value => { this.query = value; this.changePage(0); }, () => { this.regex = !this.regex; this.changePage(0); })}
         ${this.inactive ? nothing : html`
           <button type="button" ?disabled=${!data || !this.query.trim() || invalid}
             @click=${this.searchGitHub}>${panelText("Search GitHub sources")}</button>

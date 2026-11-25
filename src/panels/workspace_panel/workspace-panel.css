@@ -390,3 +390,14 @@ west-project-picker form p { flex-basis: 100%; margin: 0; }
     west-project-picker .wp-row label { min-width: min(100%, 14rem); }
     west-project-picker .wp-row label span { overflow-wrap: anywhere; }
 }
+
+/* Keep list navigation in the header while the rows scroll. */
+.modules-content .wp-tools, .modules-content .module-search { margin-block: 2px; }
+.modules-content .west-pane-header { padding: 3px 8px; }
+.modules-content .wp-full-update { margin-inline-start: auto; }
+.modules-content .wp-row { padding: 3px 8px; gap: 6px; }
+.wp-identity, .wp-pager { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.wp-identity { min-width: 0; }
+.wp-pager { align-items: center; }
+.wp-pager button { min-width: 2em; }
+.modules-content .wp-row button { padding: 2px 6px; }

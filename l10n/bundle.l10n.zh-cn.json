@@ -1498,5 +1498,8 @@
   "Installation notes": "安装说明",
   "Long paths are disabled. Building Python packages may fail.": "Windows 长路径支持未启用，构建 Python 包可能失败。",
   "Enable long paths (administrator)": "启用长路径（需管理员权限）",
-  "The SDK panel can extract archives with tar.exe. Some west sdk workflows also use 7-Zip.": "SDK 面板可使用 tar.exe 解包。部分 west sdk 工作流还会用到 7-Zip。"
+  "The SDK panel can extract archives with tar.exe. Some west sdk workflows also use 7-Zip.": "SDK 面板可使用 tar.exe 解包。部分 west sdk 工作流还会用到 7-Zip。",
+  "Previous page": "上一页",
+  "Next page": "下一页",
+  "Page {0} of {1}": "第 {0} / {1} 页"
 }
