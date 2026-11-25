@@ -655,14 +655,11 @@ memory-tree-table {
 .tt-link-icon {
   flex-shrink: 0;
   font-size: 12px;
-  opacity: 0;
-  color: var(--vscode-textLink-foreground, #4fc1ff);
-  transition: opacity 0.1s;
-}
-
-.tt-row:hover .tt-link-icon,
-.tt-row.is-selected .tt-link-icon {
-  opacity: 0.7;
+  border: 0;
+  padding: 2px;
+  background: transparent;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
 }
 
 .tt-chevron {
@@ -1314,20 +1311,7 @@ pre.text-viewer {
   align-items: center;
   gap: 2px;
   margin-left: 4px;
-  opacity: 0;
-  transition: opacity 100ms ease-in;
   flex-shrink: 0;
-}
-
-.kconfig-tree-row:hover .kconfig-row-actions,
-.kconfig-tree-selected > .kconfig-tree-row .kconfig-row-actions {
-  opacity: 1;
-}
-
-/* Always show the reset button on modified rows even without hover so the
-   change is discoverable. */
-.kconfig-tree-modified > .kconfig-tree-row .kconfig-row-actions {
-  opacity: 1;
 }
 
 .kconfig-ctx-menu {

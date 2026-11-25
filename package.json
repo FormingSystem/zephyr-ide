@@ -67,6 +67,9 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "configurationDefaults": {
+      "workbench.view.alwaysShowHeaderActions": true
+    },
     "jsonValidation": [
       {
         "fileMatch": "zephyr-ide.json",
@@ -533,11 +536,13 @@
         },
         {
           "command": "zephyr-ide.disable-automatic-project-target",
-          "when": "view == zephyrIdeActiveProject"
+          "when": "view == zephyrIdeActiveProject && config.zephyr-ide.automaticProjectSelection",
+          "group": "navigation"
         },
         {
           "command": "zephyr-ide.enable-automatic-project-target",
-          "when": "view == zephyrIdeActiveProject"
+          "when": "view == zephyrIdeActiveProject && !config.zephyr-ide.automaticProjectSelection",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -842,11 +847,13 @@
       },
       {
         "command": "zephyr-ide.disable-automatic-project-target",
-        "title": "%zephyr-ide.disable-automatic-project-target.title%"
+        "title": "%zephyr-ide.disable-automatic-project-target.title%",
+        "icon": "$(lock)"
       },
       {
         "command": "zephyr-ide.enable-automatic-project-target",
-        "title": "%zephyr-ide.enable-automatic-project-target.title%"
+        "title": "%zephyr-ide.enable-automatic-project-target.title%",
+        "icon": "$(unlock)"
       },
       {
         "command": "zephyr-ide.create-project",

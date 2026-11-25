@@ -252,11 +252,11 @@ export class MemoryTreeTable extends ZephyrLitElement {
         : html`<span class="tt-chevron tt-chevron-empty" aria-hidden="true"></span>`}
           <span class="tt-name" title=${row.node.data.name}>${nameHtml}</span>
           ${row.node.data.identifier && looksLikeSourceFile(row.node.data.identifier)
-        ? html`<span
+        ? html`<button type="button"
               class="tt-link-icon codicon codicon-go-to-file"
               title="${panelText("Open:")} ${row.node.data.identifier}"
               @click=${(e: MouseEvent) => this._onIconClick(e, row)}
-            ></span>`
+            ></button>`
         : nothing}
         </div>
         <div class="tt-cell tt-cell-size">
