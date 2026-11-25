@@ -355,7 +355,7 @@ west-project-picker form p { flex-basis: 100%; margin: 0; }
 /* Allocate the remaining editor height to the two lists. Short groups shrink
    to their rows; the intrinsic minimum keeps headings accessible at large zoom. */
 .modules-layout, .modules-layout .ws-state-ready, .modules-content,
-.modules-content west-project-picker, .modules-content .west-panes, .modules-content .west-pane {
+.modules-content west-project-picker, .modules-content .west-pane {
     display: flex;
     flex-direction: column;
 }
@@ -368,7 +368,21 @@ west-project-picker form p { flex-basis: 100%; margin: 0; }
 }
 .modules-content { margin: 0; padding: 6px; }
 .modules-content west-project-picker > :not(.west-panes), .west-pane-header { flex: none; }
-.modules-content .west-panes { flex: 0 1 auto; min-height: 10rem; gap: 8px; margin: 4px 0; }
+/* Grid shares the space between long lists. A much shorter list gets its
+   content height first, while the other list keeps at least a quarter. */
+.modules-content .west-panes {
+    grid-template-rows: repeat(2, minmax(4.5rem, max-content));
+    flex: 0 1 auto;
+    min-height: 10rem;
+    gap: 8px;
+    margin: 4px 0;
+}
+.modules-content .west-panes[data-short-list="selected"] {
+    grid-template-rows: fit-content(75%) minmax(4.5rem, 1fr);
+}
+.modules-content .west-panes[data-short-list="available"] {
+    grid-template-rows: minmax(4.5rem, 1fr) fit-content(75%);
+}
 .modules-content .west-pane { min-height: 4.5rem; }
 .modules-content .west-pane-list { min-height: 2rem; max-height: none; overflow: auto; }
 @media (max-width: 720px) {

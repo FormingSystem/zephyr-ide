@@ -223,6 +223,12 @@ export class WestProjectPicker extends ZephyrLitElement {
       (searchRevision && project.revision.toLowerCase().startsWith(query)));
   }
 
+  private shorterList(selected: number, available: number) {
+    if (selected * 2 < available) { return "selected"; }
+    if (available * 2 < selected) { return "available"; }
+    return undefined;
+  }
+
   private renderCatalog(data: WestPickerData | undefined, matches: (name: string) => boolean) {
     if (!data) {
       return html`<p role="status">${panelText("Loading west projects…")}</p>`;
@@ -246,7 +252,7 @@ export class WestProjectPicker extends ZephyrLitElement {
       ${this.discover && !this.inactive ? html`<west-repository-search .scope=${data.scope} .query=${this.query}
         .regex=${this.regex} .known=${projects.map(project => project.name.toLowerCase())}
         .choose=${(repo: GitHubRepository) => this.showForm(repo)}></west-repository-search>` : nothing}
-      <div class="west-panes">
+      <div class="west-panes" data-short-list=${this.shorterList(selected.length, available.length) ?? nothing}>
         ${westSelectionPane("wp-selected-title", panelText("Selected modules"), selected.length,
           this.group(selected, panelText("Selected modules"), true), this.inactive ? undefined : html`
             <vscode-button ?disabled=${!selected.length} @click=${() => this.send("updateWestProjects", { names: selected.map(project => project.name) })}>

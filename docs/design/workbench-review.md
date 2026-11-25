@@ -15,3 +15,9 @@ The baseline was preview `b605864`. The review followed the path from choosing a
 The [English guide](../../resources/workbench.md) and [Chinese guide](../../resources/workbench.zh-cn.md) each include two locally packaged animations. The extension host unit suite had 549 passing and 22 pending tests. The six Python west tests passed. In separate English and Chinese VS Code profiles, the extension installed from the VSIX opened the guide and decoded both images. Directory and build actions stayed within the editor at widths of 458 and 456 pixels respectively.
 
 Windows was used for the interactive checks. Linux, macOS, hardware flashing and probe debugging were outside this verification run.
+
+## Regression check for uneven module counts
+
+With an 83-project manifest, select three modules and clear the search. At an editor viewport of 1186 × 716 the previous release reduced the selected list body to 32 pixels for 188 pixels of content. In the updated VSIX both English and Chinese showed all 188 pixels, while the 80 available modules scrolled independently. Filtering to one available module left both short lists fully visible.
+
+Repeat with 80 selected and three available, 40 in each list, all selected and none selected. At narrower widths, wrapped rows may require scrolling within a list. The three tested widths were 1186, 790 and 456 pixels, including a check for page overflow at each width.
