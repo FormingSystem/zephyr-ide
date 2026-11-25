@@ -3,7 +3,7 @@ import { html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { ZephyrLitElement } from "../../webview_shared/lit-base";
 import { panelText } from "../../webview_shared/panel-text";
-import { explicitChoice, guidedKeys, type CMakeChoices, type GuidedKey } from "../../../zephyr_utilities/cmake-choices";
+import { effectiveDefinitions, explicitChoice, guidedKeys, type CMakeChoices, type GuidedKey } from "../../../zephyr_utilities/cmake-choices";
 import { fuzzyMatcher } from "../../webview_shared/module-search";
 import type { ProjectBuildPanelData } from "../project-build-data";
 
@@ -123,6 +123,10 @@ export class CMakeSection extends ZephyrLitElement {
   private get definitions() {
     const draft = this.readState<{ base: string; value: string }>(this.draftKey);
     return draft?.base === this.data.defaults ? draft.value : this.data.defaults;
+  }
+
+  get configurationDefinitions() {
+    return effectiveDefinitions(this.definitions, this.choices);
   }
 
   private rememberDefinitions(value: string) {

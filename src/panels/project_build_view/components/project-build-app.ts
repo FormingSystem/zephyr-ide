@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import "./cmake-section";
+import "./configuration-map";
 import { panelText } from "../../webview_shared/panel-text";
 import { html, nothing } from "lit";
 import { keyed } from "lit/directives/keyed.js";
@@ -108,6 +109,7 @@ export class ProjectBuildApp extends ZephyrLitElement {
     const direct = (this.buildMethod ?? (d.hasWestWorkspace ? "west" : "CMake")) === "CMake";
     const projects = d.projectOptions.map(({ name, selected }) => ({ value: name, label: name, selected }));
 
+    const location = direct ? (d.cmake.hasApplication ? d.cmake : undefined) : d.westGraph;
     return html`
       <div class="container panel-container">
         <div class="sr-only" role="status" aria-live="polite">${this._statusAnnouncement}</div>
@@ -129,6 +131,9 @@ export class ProjectBuildApp extends ZephyrLitElement {
           <vscode-button secondary @click=${() => this.postCommand("openGuide")}>${panelText("Workbench guide")}</vscode-button>
         </div>
         ${direct ? keyed(JSON.stringify([d.cmake.source, d.cmake.binary]), html`<cmake-section .data=${d.cmake} .busy=${!!this._activeBuildAction}></cmake-section>`) : this.renderWest(d)}
+        ${location ? keyed(JSON.stringify([direct,location.source,location.binary]), html`
+          <configuration-map .source=${location.source} .binary=${location.binary} .method=${direct ? "CMake" : "west"}
+            .definitions=${d.cmake.defaults}></configuration-map>`) : nothing}
       </div>`;
   }
 

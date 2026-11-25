@@ -17,6 +17,8 @@ limitations under the License.
 
 import { webviewMessages } from "../webview-messages";
 import * as vscode from "vscode";
+import { openGraphEditor } from "./configuration-graph/editor";
+import { configurationGraph } from "./configuration-graph/controller";
 import { ConfigurationPage } from "../configuration-page";
 import { configurationNavigation } from "../configuration-navigation";
 import * as path from "upath";
@@ -131,6 +133,7 @@ export class ProjectBuildPanel {
   ) {
     this._panel = panel;
     this._extensionPath = extensionPath;
+    this._disposables.push(configurationGraph.onChange(change => this._panel.postMessage(change)));
     this._context = context;
     this._wsConfig = wsConfig;
     this._globalConfig = globalConfig;
@@ -199,6 +202,10 @@ export class ProjectBuildPanel {
 
     try {
       switch (cmd) {
+        case "openGraphEditor":
+        case "configurationGraph":
+          await this.handleConfigurationGraph(message);
+          return;
         case "directCMake":
           await this.handleCMake(message.action, message.definitions, message.binary, message.requestId, { BOARD: message.board, ZEPHYR_BASE: message.zephyrBase });
           return;
@@ -434,6 +441,32 @@ export class ProjectBuildPanel {
     }
   }
 
+  private async handleConfigurationGraph(message: Record<string, any>) {
+    const { action, route, file, id, value, source, binary, request, revision } = message;
+    const usesWest = message.method === "west";
+    const location = usesWest ? this.westGraphLocation : this.cmakeContext.location;
+    try {
+      if (!location) { throw new Error(vscode.l10n.t("Choose a build configuration.")); }
+      const context = {
+        ...location,
+        extension: this._extensionPath,
+        setup: this._wsConfig.activeSetupState,
+        definitions: usesWest ? "" : String(message.definitions ?? ""),
+      };
+      if (message.command === "openGraphEditor") {
+        if (!vscode.workspace.isTrusted || location.source !== source || location.binary !== binary) { return; }
+        await openGraphEditor(context, { route, file, query: message.query, selected: id }, message.newWindow === true);
+        return;
+      }
+      const response = await configurationGraph.respond(context, {
+        action, route, file, id, value, source, binary, request, revision,
+      });
+      await this._panel.postMessage(response);
+    } catch (error) {
+      await this._panel.postMessage({ command: "configurationGraphResult", request, error: String(error) });
+    }
+  }
+
   private async handleRemoveConfigFile(message: Record<string, any>, isKConfig: boolean, isProject: boolean) {
     if (!this._selectedProject || !message.file) {
       return;
@@ -662,6 +695,14 @@ export class ProjectBuildPanel {
 
   private updateHtml() {
     void this._updateHtmlAsync();
+  }
+
+  private get westGraphLocation() {
+    const project = this._selectedProject && this._wsConfig.projects[this._selectedProject];
+    const selection = this._selectedBuildOrTest;
+    if (!project || !selection?.startsWith("build:")) { return undefined; }
+    const build = project.buildConfigs[selection.slice(6)];
+    return build && {source:getProjectFolder(this._wsConfig,project),binary:getBuildFolder(this._wsConfig,project,build)};
   }
 
   private get cmakeContext() {
@@ -932,6 +973,7 @@ export class ProjectBuildPanel {
     const cmake = describeCMake(location);
     return {
       cmake: { ...cmake, choices, defaults: cmake.configured && !hasSavedDefinitions ? "" : defaults },
+      westGraph: this.westGraphLocation,
       hasWestWorkspace: !!this._wsConfig.activeSetupState?.initialized,
       projectOptions,
       buildTestOptions,

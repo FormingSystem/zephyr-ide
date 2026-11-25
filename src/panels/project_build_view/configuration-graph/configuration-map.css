@@ -1,0 +1,191 @@
+configuration-map {
+  display: block;
+  margin-block: 10px;
+}
+.cg-panel {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 5px;
+  background: var(--vscode-editor-background);
+}
+.cg-panel button,
+.cg-panel input,
+.cg-panel select {
+  font: inherit;
+  color: inherit;
+}
+.cg-panel button {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.cg-panel button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.cg-panel button:hover:enabled {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+.cg-panel :focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 1px;
+}
+.cg-panel input,
+.cg-panel select {
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+  padding: 3px 6px;
+}
+.cg-panel .cg-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  text-align: start;
+  padding: 8px 10px;
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+}
+.cg-heading i:last-child {
+  margin-inline-start: auto;
+}
+.cg-tools,
+.cg-inspector,
+.cg-review {
+  padding: 6px 10px;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+.cg-tools,
+.cg-inspector {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+}
+.cg-search {
+  flex: 1 1 11em;
+  min-width: 6em;
+}
+.cg-canvas {
+  overflow: auto;
+  max-height: 17rem;
+  cursor: grab;
+  touch-action: none;
+  border-block: 1px solid var(--vscode-panel-border);
+}
+.cg-canvas:active {
+  cursor: grabbing;
+}
+.cg-tree {
+  --line: var(--vscode-tree-indentGuidesStroke, var(--vscode-descriptionForeground));
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+  grid-template-columns: minmax(10em, 1fr) 12em minmax(18em, 2fr);
+  align-items: center;
+  column-gap: 2em;
+  box-sizing: border-box;
+  padding: 12px;
+}
+.cg-root,
+.cg-branches,
+.cg-leaves {
+  display: grid;
+  position: relative;
+  gap: 5px;
+}
+.cg-panel .cg-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-align: start;
+  background: var(--vscode-sideBar-background);
+  color: inherit;
+  border: 1px solid var(--vscode-panel-border);
+  min-height: 34px;
+  max-width: 32rem;
+}
+.cg-node span {
+  display: grid;
+  min-width: 0;
+}
+.cg-node strong,
+.cg-node small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cg-node small,
+.cg-inspector small {
+  color: var(--vscode-descriptionForeground);
+}
+.cg-node[aria-pressed="true"] {
+  border-color: var(--vscode-focusBorder);
+  background: var(--vscode-list-inactiveSelectionBackground);
+}
+.cg-root::after,
+.cg-branches .cg-node[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: 1em;
+  border-top: 1px solid var(--line);
+}
+.cg-branches::before,
+.cg-leaves::before {
+  content: "";
+  position: absolute;
+  left: -1em;
+  top: 18px;
+  bottom: 18px;
+  border-left: 1px solid var(--line);
+}
+.cg-branches .cg-node::before,
+.cg-leaves .cg-node::before {
+  content: "";
+  position: absolute;
+  right: 100%;
+  width: 1em;
+  border-top: 1px solid var(--line);
+}
+.cg-review pre {
+  max-height: 11em;
+  overflow: auto;
+  margin: 5px 0;
+  padding: 6px;
+  background: var(--vscode-textCodeBlock-background);
+}
+.cg-panel .cg-save {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+.cg-panel > small,
+.cg-panel > [role="status"]:not(:empty) {
+  display: block;
+  padding: 3px 10px;
+  overflow-wrap: anywhere;
+}
+
+.cg-view-header, .cg-view-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.cg-view-header { justify-content: space-between; padding-inline-end: 6px; }
+.cg-panel .cg-heading { width: auto; }
+.cg-view-tools button { white-space: nowrap; }
+.cg-tree[data-zoom="75"] { zoom: .75; }
+.cg-tree[data-zoom="125"] { zoom: 1.25; }
+.cg-tree[data-zoom="150"] { zoom: 1.5; }
+.cg-tree[data-zoom="175"] { zoom: 1.75; }
+body.cg-editor { margin: 0; padding: 0; }
+.cg-editor configuration-map { margin: 0; }
+.cg-editor .cg-panel { min-height: 100vh; border: 0; border-radius: 0; display: flex; flex-direction: column; }
+.cg-editor .cg-canvas { flex: 1 1 auto; min-height: 13rem; max-height: 72vh; }
+.cg-editor .cg-tree { min-height: min(56vh, 40rem); grid-template-columns: minmax(12em,1fr) minmax(13em,1fr) minmax(18em,2fr); }
+.cg-editor .cg-node { max-width: none; }
+.cg-editor .cg-review pre { max-height: 18vh; }
+
+.cg-title { font-size: 1rem; margin: 8px 10px; }

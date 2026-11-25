@@ -1,3 +1,4 @@
+@import "./configuration-graph/configuration-map.css";
 /* Project Build Panel Styles - Uses VS Code CSS custom properties for theming */
 @import url("../webview_shared/webview-base.css");
 

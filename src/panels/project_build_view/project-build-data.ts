@@ -171,6 +171,7 @@ export interface ProjectBuildPanelData {
     choices: CMakeChoices;
     variables: { name: string; value: string; origin: string }[];
   };
+  westGraph?: { source: string; binary: string };
   hasWestWorkspace: boolean;
   /** Available projects for the dropdown */
   projectOptions: WebviewProjectOption[];
