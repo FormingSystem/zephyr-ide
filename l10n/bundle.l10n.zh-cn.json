@@ -1501,5 +1501,6 @@
   "The SDK panel can extract archives with tar.exe. Some west sdk workflows also use 7-Zip.": "SDK 面板可使用 tar.exe 解包。部分 west sdk 工作流还会用到 7-Zip。",
   "Previous page": "上一页",
   "Next page": "下一页",
-  "Page {0} of {1}": "第 {0} / {1} 页"
+  "Page {0} of {1}": "第 {0} / {1} 页",
+  "Inherit west configuration": "继承 west 配置"
 }

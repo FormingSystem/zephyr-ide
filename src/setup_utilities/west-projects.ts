@@ -29,6 +29,7 @@ export interface WestProject {
 }
 
 export interface WestCatalog {
+  fetchMode?: string;
   projects: WestProject[];
   partial: boolean;
 }
@@ -128,6 +129,10 @@ function remoteKey(state: SetupState, p: WestProject) {
 export async function checkWestRemote(context: vscode.ExtensionContext, state: SetupState, project: WestProject) {
   const remote = await invoke<RemoteRevision>(context, state, "remote-revision", project);
   await context.workspaceState.update(remoteKey(state, project), { ...remote, localHead: project.checkout.head });
+}
+
+export function setWestFetchMode(context: vscode.ExtensionContext, state: SetupState, mode: string) {
+  return invoke<null>(context, state, "set-fetch-mode", mode);
 }
 
 export async function readWestCatalog(context: vscode.ExtensionContext, state: SetupState) {

@@ -29,13 +29,25 @@ def catalog():
     from west_status import checkout
     direct, resolved, partial = manifests()
     root_names = {p.name for p in direct.projects[1:]}
-    return {"partial": partial, "projects": [
+    fetch = Configuration(topdir=Path(direct.topdir)).get("update.fetch", configfile=ConfigFile.LOCAL)
+    return {"fetchMode": fetch or "", "partial": partial, "projects": [
         {"name": p.name, "url": p.url, "revision": p.revision, "path": p.path,
          "checkout": checkout(p),
          "extra": isinstance(p.userdata, dict) and p.userdata.get(MARK) is True,
          "imported": p.name not in root_names}
         for p in resolved.projects[1:]
     ]}
+
+
+def set_fetch_mode(mode):
+    config = Configuration(topdir=Path.cwd())
+    if mode in ("smart", "always"):
+        config.set("update.fetch", mode, ConfigFile.LOCAL)
+    elif mode == "":
+        if config.get("update.fetch", configfile=ConfigFile.LOCAL) is not None:
+            config.delete("update.fetch", ConfigFile.LOCAL)
+    else:
+        raise ValueError("Invalid update.fetch mode")
 
 
 def update(names, flags):
@@ -204,7 +216,7 @@ def activate_overlay(data):
 if __name__ == "__main__":
     sys.dont_write_bytecode = True
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["list", "edit", "activate-overlay", "dependencies", "remote-revision", "update"])
+    parser.add_argument("action", choices=["set-fetch-mode", "list", "edit", "activate-overlay", "dependencies", "remote-revision", "update"])
     parser.add_argument("--narrow", action="store_true")
     parser.add_argument("--keep-descendants", action="store_true")
     parser.add_argument("names", nargs="*")
@@ -212,6 +224,9 @@ if __name__ == "__main__":
     try:
         if args.action == "list":
             print(json.dumps(catalog()))
+        elif args.action == "set-fetch-mode":
+            set_fetch_mode(json.load(sys.stdin))
+            print("null")
         elif args.action == "remote-revision":
             from west_status import remote_revision
             request = json.load(sys.stdin)

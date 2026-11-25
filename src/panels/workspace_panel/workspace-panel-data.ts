@@ -88,7 +88,15 @@ export interface ActivationBannerData {
   path: string;
 }
 
+export const updateOptions = {
+  westNarrowUpdate: "--narrow",
+  westKeepDescendants: "--keep-descendants",
+  autoFetchProjectModules: "Download detected project dependencies automatically",
+} as const;
+
 export interface WorkspaceInfoData {
+  scope: string;
+  options: Record<keyof typeof updateOptions, boolean>;
   currentFolderPath: string;
   westWorkspacePath: string;
   westYmlPath: string;
@@ -117,19 +125,15 @@ export interface SetupProgressData {
  */
 export type WorkspacePanelCommand =
   | 'ready'
+  | 'setUpdateOption'
+  | 'setFetchMode'
   | 'openFolder'
-  | 'openSetupPanel'
-  | 'openProjectPanel'
   | 'openWestYml'
   | 'activateWorkspace'
   | 'resetWorkspace'
   | 'deactivateWorkspace'
   | 'rerunWestSetup'
   | 'unregisterWorkspace'
-  | 'setupWestEnvironment'
-  | 'westInit'
-  | 'westUpdate'
-  | 'westConfig'
   | 'workspaceSetupFromGit'
   | 'workspaceSetupFromWestGit'
   | 'workspaceSetupStandard'

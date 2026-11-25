@@ -34,6 +34,18 @@ def repository(root, name, files):
 
 
 class WestProjectsTest(unittest.TestCase):
+    def test_local_fetch_policy(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            app = root / "app"
+            app.mkdir()
+            (app / "west.yml").write_text("manifest: {projects: []}")
+            run(root, sys.executable, "-m", "west", "init", "-l", str(app))
+            for mode in ("always", "smart", ""):
+                run(root, sys.executable, str(HELPER), "set-fetch-mode", data=mode)
+                catalog = json.loads(run(root, sys.executable, str(HELPER), "list").stdout)
+                self.assertEqual(catalog["fetchMode"], mode)
+
     def test_dependency_downloads_and_version_checks(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

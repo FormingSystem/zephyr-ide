@@ -17,7 +17,7 @@ limitations under the License.
 
 import { tracksRemoteRevision } from "../../utilities/west-revision";
 import { findRepositories } from "../../setup_utilities/github-repositories";
-import { checkWestRemote, editWestProject, projectScope, projectSelection, readWestCatalog, savedProjects, saveProjects } from "../../setup_utilities/west-projects";
+import { checkWestRemote, editWestProject, projectScope, projectSelection, readWestCatalog, savedProjects, saveProjects, setWestFetchMode } from "../../setup_utilities/west-projects";
 import { ConfigurationPage } from "../configuration-page";
 import { configurationNavigation } from "../configuration-navigation";
 import { webviewMessages } from "../webview-messages";
@@ -37,6 +37,7 @@ import {
   workspaceSetupStandard,
   workspaceSetupFromCurrentDirectory,
 } from "../../setup_utilities/workspace-setup";
+import { updateOptions } from "./workspace-panel-data";
 import type { WorkspacePanelData, ActivationBannerData, WorkspaceInfoData, WorkspaceReadiness, WorkspacePanelMode } from "./workspace-panel-data";
 
 export class WorkspacePanel {
@@ -127,6 +128,11 @@ export class WorkspacePanel {
 
     // Subscribe to workspace setup progress events and forward to webview
     this._disposables.push(
+      vscode.workspace.onDidChangeConfiguration(event => {
+        if (Object.keys(updateOptions).some(key => event.affectsConfiguration("zephyr-ide." + key))) {
+          this._pushContentUpdate();
+        }
+      }),
       onSetupProgress((event) => {
         this._panel.postMessage({
           command: 'workspaceSetupProgress',
@@ -200,17 +206,11 @@ export class WorkspacePanel {
     deactivateWorkspace: "zephyr-ide.deactivate-workspace",
     rerunWestSetup: "zephyr-ide.rerun-west-setup",
     unregisterWorkspace: "zephyr-ide.unregister-workspace",
-    setupWestEnvironment: "zephyr-ide.setup-west-environment",
-    westInit: "zephyr-ide.west-init",
-    westUpdate: "zephyr-ide.west-update",
-    westConfig: "zephyr-ide.west-config",
     workspaceSetupFromGit: "zephyr-ide.workspace-setup-from-git",
     workspaceSetupFromWestGit: "zephyr-ide.workspace-setup-from-west-git",
     workspaceSetupStandard: "zephyr-ide.workspace-setup-standard",
     workspaceSetupFromCurrentDirectory: "zephyr-ide.workspace-setup-from-current-directory",
     workspaceSetupFromExternalDirectory: "zephyr-ide.workspace-setup-from-external-directory",
-    openSetupPanel: "zephyr-ide.open-setup-panel",
-    openProjectPanel: "zephyr-ide.open-project-build-panel",
   };
 
   private handleWebviewMessage(message: Record<string, any>) {
@@ -243,6 +243,12 @@ export class WorkspacePanel {
             });
           }
         }
+        return;
+      case "setUpdateOption":
+      case "setFetchMode":
+        void this.saveUpdateOption(message).catch(error => {
+          notifyError("West Config", String(error));
+        }).finally(() => this._pushContentUpdate());
         return;
       case "openWestYml":
         this.openWestYml();
@@ -309,6 +315,24 @@ export class WorkspacePanel {
       case "markWorkspaceCompleteExternal":
         void this._markWorkspaceComplete(this._externalDir);
         return;
+    }
+  }
+
+  private async saveUpdateOption(message: Record<string, unknown>) {
+    const ws = this.currentWsConfig;
+    const target = this.getTargetSetupState();
+    if (!vscode.workspace.isTrusted || !ws || !target || target.setupPath !== ws.activeSetupState?.setupPath ||
+        message.scope !== projectScope(ws, target.setupPath)) { return; }
+    if (message.command === "setFetchMode") {
+      if (typeof message.value === "string" && ["", "smart", "always"].includes(message.value)) {
+        try {
+          await setWestFetchMode(this._context, target.setupState, message.value);
+        } finally {
+          await this.loadWestProjects();
+        }
+      }
+    } else if (typeof message.key === "string" && Object.prototype.hasOwnProperty.call(updateOptions, message.key) && typeof message.value === "boolean") {
+      await vscode.workspace.getConfiguration("zephyr-ide").update(message.key, message.value, vscode.ConfigurationTarget.Workspace);
     }
   }
 
@@ -707,7 +731,14 @@ export class WorkspacePanel {
         ? formatZephyrVersion(target.setupState.zephyrVersion)
         : vscode.l10n.t("Not available");
 
+      const config = vscode.workspace.getConfiguration("zephyr-ide");
       workspaceInfo = {
+        scope: projectScope(wsConfig, target.setupPath),
+        options: {
+          westNarrowUpdate: config.get("westNarrowUpdate", false),
+          westKeepDescendants: config.get("westKeepDescendants", false),
+          autoFetchProjectModules: config.get("autoFetchProjectModules", false),
+        },
         currentFolderPath: vscode.Uri.file(wsConfig.rootPath).fsPath,
         westWorkspacePath: vscode.Uri.file(target.setupPath).fsPath,
         westYmlPath: westYmlPath ? vscode.Uri.file(westYmlPath).fsPath : vscode.l10n.t("Not found"),
